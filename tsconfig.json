@@ -4,5 +4,8 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
-  "include": ["eslint.config.js"]
+  "include": ["eslint.config.js"],
+  "compilerOptions": {
+    "types": ["node"]
+  }
 }
