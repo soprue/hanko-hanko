@@ -34,6 +34,7 @@ export default tseslint.config([
         version: "detect", // 설치된 React 버전 자동 감지
       },
     },
+    ignorePatterns: [".eslintrc.cjs"],
   },
   eslintConfigPrettier,
 ]);
