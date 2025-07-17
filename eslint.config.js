@@ -40,7 +40,7 @@ export default tseslint.config([
       'import/resolver': {
         typescript: true,
         alias: {
-          map: [['/', './']],
+          map: [['@', './src']],
           extensions: ['.ts', '.tsx', '.js', '.jsx'],
         },
       },
