@@ -1,17 +1,31 @@
 @import 'tailwindcss';
+@config '../tailwind.config.js';
+
+@layer base {
+  :root {
+    --primary: #fa6819;
+    --secondary: #eebb84;
+
+    --background: #fa6819;
+    --foreground: #1a1918;
+
+    --border: #e8e8e8;
+    --warning: #ec4b4e;
+
+    --text: #333333;
+    --text-foreground: #372d1f;
+    --text-muted: #80786b;
+
+    --font-pretendard: 'Pretendard', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-pretendard);
+  }
+}
 
 @font-face {
   font-family: 'Pretendard';
   src: url('/assets/fonts/PretendardVariable.woff2') format('woff2');
   font-display: swap;
-}
-
-@theme {
-  --font-pretendard: 'Pretendard', sans-serif;
-}
-
-@layer base {
-  body {
-    @apply font-pretendard;
-  }
 }
