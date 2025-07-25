@@ -11,6 +11,10 @@ export default {
   prefix: '',
   theme: {
     extend: {
+      screens: {
+        wide: '1440px',
+        'max-wide': { max: '1439px' },
+      },
       fontFamily: {
         pretendard: ['Pretendard'],
       },
