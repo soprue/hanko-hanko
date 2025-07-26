@@ -23,8 +23,8 @@ export default {
         secondary: 'var(--secondary)',
         warning: 'var(--warning)',
 
-        bg: 'var(--background)',
-        fg: 'var(--foreground)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
         border: 'var(--border)',
 
         text: {
