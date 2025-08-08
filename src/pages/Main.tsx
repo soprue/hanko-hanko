@@ -1,3 +1,4 @@
+import Icon from '@/components/ui/Icon';
 import Button from '@components/ui/Button';
 import Card from '@components/ui/Card';
 
@@ -14,6 +15,17 @@ function Main() {
             zz
           </Button>
           <Button>zz</Button>
+
+          <div className='flex items-center gap-2 py-10'>
+            <Icon
+              name='checkbox'
+              // color='red'
+              width={24}
+              className='text-text-heading'
+              onClick={() => console.log('click')}
+            />
+            그룹 사용
+          </div>
         </Card>
         <Card>Card</Card>
         <Card>Card</Card>

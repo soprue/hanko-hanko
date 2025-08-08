@@ -11,10 +11,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "generate:icon-types": "ts-node scripts/generate-icon-types.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "clsx": "^2.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0"
@@ -23,7 +25,7 @@
     "@eslint/js": "^9.30.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/typography": "^0.5.16",
-    "@types/node": "^24.0.14",
+    "@types/node": "^24.2.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-router-dom": "^5.3.3",
@@ -45,9 +47,11 @@
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4.1.11",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.1.1",
+    "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "lint-staged": {
