@@ -1,15 +1,14 @@
-import clsx from 'clsx';
-
 import type { IconType } from '@/types/icon-types';
+import { cn } from '@/utils/cn';
 import { iconMap } from '@assets/icons/icon-map';
 
-interface IconProps {
+type IconProps = {
   name: IconType;
   width?: number;
   color?: string;
   className?: string;
   onClick?: React.MouseEventHandler<SVGSVGElement>;
-}
+};
 
 function Icon({ name, width, color, className, onClick }: IconProps) {
   const IconComponent = iconMap[name];
@@ -19,7 +18,7 @@ function Icon({ name, width, color, className, onClick }: IconProps) {
     <IconComponent
       width={width}
       onClick={onClick}
-      className={clsx(onClick && 'cursor-pointer', className)}
+      className={cn(onClick && 'cursor-pointer', className)}
       style={{
         ...(color ? { color } : {}),
       }}
