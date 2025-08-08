@@ -24,7 +24,7 @@ function Main() {
             <Button variant='ghost' disabled>
               zz
             </Button>
-            <Button variant='ghost' size='lg'>
+            <Button variant='ghost' size='lg' disableHover={false}>
               zz
             </Button>
             <Button>zz</Button>

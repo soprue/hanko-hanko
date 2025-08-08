@@ -11,23 +11,25 @@ type ButtonProps = {
   size?: ButtonSize;
   fullWidth?: boolean;
   disabled?: boolean;
+  disableHover?: boolean;
   className?: string;
 };
 
 const base =
   'rounded-md transition-all duration-200 cursor-pointer ease-in-out';
 
-const variants: Record<ButtonVariant, string> = {
-  default: `
-      border border-foreground bg-foreground text-white
-      enabled:hover:opacity-90
-      disabled:opacity-30 disabled:cursor-not-allowed
-    `,
-  ghost: `
-      border border-border
-      enabled:hover:bg-foreground enabled:hover:text-white enabled:hover:border-foreground
-      disabled:opacity-30 disabled:cursor-not-allowed
-    `,
+const variants: Record<ButtonVariant, (disableHover?: boolean) => string> = {
+  default: (disableHover) =>
+    cn(
+      'border border-foreground bg-foreground text-white disabled:opacity-30 disabled:cursor-not-allowed',
+      !disableHover && 'enabled:hover:opacity-90',
+    ),
+  ghost: (disableHover) =>
+    cn(
+      'border border-border disabled:opacity-30 disabled:cursor-not-allowed',
+      !disableHover &&
+        'enabled:hover:bg-foreground enabled:hover:text-white enabled:hover:border-foreground',
+    ),
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -44,6 +46,7 @@ function Button({
   size = 'md',
   fullWidth = false,
   disabled = false,
+  disableHover = true,
   className,
 }: ButtonProps) {
   return (
@@ -52,7 +55,7 @@ function Button({
       type={type}
       className={cn(
         base,
-        variants[variant],
+        variants[variant](disableHover),
         sizes[size],
         fullWidth && 'w-full',
         className,
