@@ -16,7 +16,7 @@ type ButtonProps = {
 };
 
 const base =
-  'rounded-md transition-all duration-200 cursor-pointer ease-in-out focus:outline-text-heading';
+  'rounded-md transition-all duration-200 cursor-pointer ease-in-out focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading';
 
 const variants: Record<ButtonVariant, (disableHover?: boolean) => string> = {
   default: (disableHover) =>

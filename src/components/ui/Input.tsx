@@ -16,7 +16,7 @@ type InputProps = {
 };
 
 const base =
-  'block rounded-xl border outline-none transition-all duration-200 ease-in-out focus:ring-1';
+  'block rounded-xl border outline-none transition-all duration-200 ease-in-out focus:ring-1 focus:ring-offset-2';
 
 const variants = {
   default: `
@@ -75,6 +75,7 @@ function Input({
         className={cn(
           base,
           error ? variants.error : variants.default,
+          error && 'focus:ring-warning',
           sizes[size],
           fullWidth && 'w-full',
           className,

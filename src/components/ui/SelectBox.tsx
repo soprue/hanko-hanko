@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 
 import type { UIComponentSize } from '@/types/ui';
+import Icon from '@components/ui/Icon';
 import useClickOutside from '@hooks/useClickOutside';
 import { cn } from '@utils/cn';
-import Icon from './Icon';
 
 type SelectOption = { label: string; value: string; disabled?: boolean };
 
@@ -20,7 +20,7 @@ type SelectBoxProps = {
 };
 
 const base =
-  'relative inline-flex items-center justify-between border transition-all duration-200 focus:outline-1 focus:outline-text-heading ease-in-out pr-10';
+  'relative inline-flex items-center justify-between border transition-all duration-200 focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading ease-in-out pr-10';
 
 const variants = {
   outline: `
@@ -168,7 +168,7 @@ function SelectBox({
                 disabled={!!option.disabled}
                 onClick={() => selectAt(idx)}
                 className={cn(
-                  'focus:outline-text-heading w-full rounded-md text-left focus:outline-1',
+                  'focus-visible:outline-text-heading w-full rounded-md text-left focus-visible:outline-1',
                   s.menuItem,
                   option.disabled
                     ? 'cursor-not-allowed opacity-40'
