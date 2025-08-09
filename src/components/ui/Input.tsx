@@ -16,7 +16,7 @@ type InputProps = {
 };
 
 const base =
-  'block rounded-md border outline-none transition-all duration-200 ease-in-out focus:ring-1';
+  'block rounded-xl border outline-none transition-all duration-200 ease-in-out focus:ring-1';
 
 const variants = {
   default: `
