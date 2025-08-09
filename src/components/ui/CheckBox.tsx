@@ -58,12 +58,12 @@ function CheckBox({
       />
 
       <Icon
-        name='checkbox'
+        name='Checkbox'
         width={s.icon}
         className={cn(
           'rounded-md transition-all duration-200 ease-in-out',
           checked ? 'text-text-heading' : 'text-text-heading/30',
-          'peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--foreground)]',
+          'peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--foreground)]',
         )}
       />
       {label && <span className={cn(s.label, 'select-none')}>{label}</span>}

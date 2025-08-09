@@ -1,2 +1,3 @@
 export type IconType =
-  | 'checkbox';
+  | 'ArrowDropDown'
+  | 'Checkbox';
