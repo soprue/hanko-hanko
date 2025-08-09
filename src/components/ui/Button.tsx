@@ -1,14 +1,14 @@
+import type { UIComponentSize } from '@/types/ui';
 import { cn } from '@utils/cn';
 
 type ButtonVariant = 'default' | 'ghost';
-type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = {
   children: React.ReactNode;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   variant?: ButtonVariant;
-  size?: ButtonSize;
+  size?: UIComponentSize;
   fullWidth?: boolean;
   disabled?: boolean;
   disableHover?: boolean;
@@ -32,7 +32,7 @@ const variants: Record<ButtonVariant, (disableHover?: boolean) => string> = {
     ),
 };
 
-const sizes: Record<ButtonSize, string> = {
+const sizes: Record<UIComponentSize, string> = {
   sm: 'text-sm px-3 py-1.5',
   md: 'text-base px-4 py-2',
   lg: 'text-lg px-5 py-3',
