@@ -1,3 +1,6 @@
 export type IconType =
   | 'ArrowDropDown'
-  | 'Checkbox';
+  | 'Checkbox'
+  | 'Cube'
+  | 'List'
+  | 'Pallet';
