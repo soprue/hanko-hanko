@@ -1,5 +1,5 @@
 // 기본 코(늘림/줄임의 대상)
-type BaseStitch = 'MR' | 'CH' | 'SC' | 'HDC' | 'DC' | 'TR' | 'SLST';
+export type StitchCode = 'MR' | 'CH' | 'SC' | 'HDC' | 'DC' | 'TR' | 'SLST';
 
 // 가변도(늘림/줄임)
 type Arity =
@@ -10,7 +10,7 @@ type Arity =
 // 토큰: "SC-INC2", "DC-DEC3", "SC"(그냥 기본코)
 type StitchToken = {
   id: string;
-  base: BaseStitch;
+  base: StitchCode;
   arity: Arity; // null이면 그냥 기본코
   times?: number; // 같은 토큰을 연속 몇 번(옵션)  ex) SC * 6
 };
