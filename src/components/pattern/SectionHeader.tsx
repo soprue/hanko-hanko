@@ -8,7 +8,7 @@ type SectionHeaderProps = {
 
 function SectionHeader({ title, help, className }: SectionHeaderProps) {
   return (
-    <div className={cn('flex items-center gap-3', className)}>
+    <div className={cn('mb-6 flex items-center gap-3', className)}>
       {help}
       <h2 className='text-text-heading text-xl font-bold'>{title}</h2>
     </div>

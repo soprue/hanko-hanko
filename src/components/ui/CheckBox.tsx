@@ -66,7 +66,9 @@ function CheckBox({
           'peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--foreground)]',
         )}
       />
-      {label && <span className={cn(s.label, 'select-none')}>{label}</span>}
+      {label && (
+        <span className={cn(s.label, 'font-light select-none')}>{label}</span>
+      )}
     </label>
   );
 }
