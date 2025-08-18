@@ -16,7 +16,7 @@ type ButtonProps = {
 };
 
 const base =
-  'rounded-md transition-all duration-200 cursor-pointer ease-in-out focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading';
+  'transition-all duration-200 cursor-pointer ease-in-out focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading';
 
 const variants: Record<ButtonVariant, (disableHover?: boolean) => string> = {
   default: (disableHover) =>
@@ -33,9 +33,9 @@ const variants: Record<ButtonVariant, (disableHover?: boolean) => string> = {
 };
 
 const sizes: Record<UIComponentSize, string> = {
-  sm: 'text-sm px-3 py-1.5',
-  md: 'text-base px-4 py-2',
-  lg: 'text-lg px-5 py-3',
+  sm: 'text-sm px-3 py-1.5 rounded-lg',
+  md: 'text-base px-4 py-2 rounded-xl',
+  lg: 'text-lg px-5 py-3 rounded-2xl',
 };
 
 function Button({

@@ -36,7 +36,6 @@ const StitchItem = memo(function StitchItem({
       className='flex flex-col gap-1.5 text-sm'
       onClick={handleClick}
       aria-label={`${label} 선택 (${code})`}
-      type='button'
     >
       <p className='font-bold'>{codeText ?? code}</p>
       <span className='font-light'>{label}</span>
@@ -48,7 +47,7 @@ function StitchBasePicker() {
   const handleSelect = () => {};
 
   return (
-    <>
+    <div>
       <SectionTitle
         title='기법 선택'
         right={
@@ -72,7 +71,7 @@ function StitchBasePicker() {
           />
         ))}
       </div>
-    </>
+    </div>
   );
 }
 

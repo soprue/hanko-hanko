@@ -17,10 +17,11 @@ type SelectBoxProps = {
   disabled?: boolean;
   className?: string; // 트리거 버튼 영역 className
   menuClassName?: string; // 드롭다운 메뉴 영역 className
+  triggerLabel?: string; // 트리거에 항상 이 텍스트 표시
 };
 
 const base =
-  'relative inline-flex items-center justify-between border transition-all duration-200 focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading ease-in-out pr-10';
+  'relative inline-flex items-center justify-between border transition-all duration-200 focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading ease-in-out';
 
 const variants = {
   outline: `
@@ -61,6 +62,7 @@ function SelectBox({
   disabled = false,
   className,
   menuClassName,
+  triggerLabel,
 }: SelectBoxProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState<number>(-1);
@@ -108,6 +110,11 @@ function SelectBox({
     setOpen(false);
   };
 
+  const triggerContent = useMemo(() => {
+    if (triggerLabel !== undefined) return triggerLabel;
+    return current?.label ?? placeholder;
+  }, [triggerLabel, current, placeholder]);
+
   return (
     <div className={cn('relative', fullWidth && 'w-full')}>
       {/* 트리거 버튼 */}
@@ -131,8 +138,14 @@ function SelectBox({
           'peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--foreground)]',
         )}
       >
-        <span className={cn('mx-auto truncate', !current && 'text-text/30')}>
-          {current?.label ?? placeholder}
+        <span
+          className={cn(
+            s.text,
+            'mx-auto truncate',
+            !current && !triggerLabel && 'text-text/30',
+          )}
+        >
+          {triggerContent}
         </span>
 
         <Icon
@@ -168,7 +181,7 @@ function SelectBox({
                 disabled={!!option.disabled}
                 onClick={() => selectAt(idx)}
                 className={cn(
-                  'focus-visible:outline-text-heading w-full rounded-md text-left focus-visible:outline-1',
+                  'focus-visible:outline-text-heading w-full rounded-md text-center focus-visible:outline-1',
                   s.menuItem,
                   option.disabled
                     ? 'cursor-not-allowed opacity-40'
