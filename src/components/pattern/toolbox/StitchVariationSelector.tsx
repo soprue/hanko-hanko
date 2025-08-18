@@ -37,7 +37,7 @@ function StitchVariationSelector() {
           triggerLabel='늘림'
         />
         <SelectBox
-          options={DEC_OPTIONS}
+          options={[]}
           fullWidth
           value={dec}
           onChange={(v) => setDec(v)}
