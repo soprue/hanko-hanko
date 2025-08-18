@@ -17,6 +17,7 @@ const DEC_OPTIONS = [
 ];
 
 function StitchVariationSelector() {
+  const [variation, setVariation] = useState<'base' | 'inc' | 'dec'>('base');
   const [inc, setInc] = useState(INC_OPTIONS[0].value);
   const [dec, setDec] = useState(DEC_OPTIONS[0].value);
 
@@ -25,22 +26,33 @@ function StitchVariationSelector() {
       <SectionTitle title='변형 선택' />
 
       <div className='grid grid-cols-3 gap-2'>
-        <Button variant='default' className='text-sm'>
+        <Button
+          variant={variation === 'base' ? 'default' : 'ghost'}
+          className='text-sm'
+          onClick={() => setVariation('base')}
+        >
           기본
         </Button>
         <SelectBox
+          variant={variation === 'inc' ? 'default' : 'ghost'}
           options={INC_OPTIONS}
           fullWidth
-          className='px-0'
+          className='h-12'
+          size='sm'
           value={inc}
           onChange={(v) => setInc(v)}
+          onTriggerClick={() => setVariation('inc')}
           triggerLabel='늘림'
         />
         <SelectBox
-          options={[]}
+          variant={variation === 'dec' ? 'default' : 'ghost'}
+          options={DEC_OPTIONS}
           fullWidth
+          className='h-12'
+          size='sm'
           value={dec}
           onChange={(v) => setDec(v)}
+          onTriggerClick={() => setVariation('dec')}
           triggerLabel='줄임'
         />
       </div>

@@ -5,12 +5,16 @@ import Icon from '@components/ui/Icon';
 import useClickOutside from '@hooks/useClickOutside';
 import { cn } from '@utils/cn';
 
+type SelectBoxVariant = 'default' | 'ghost';
+
 type SelectOption = { label: string; value: string; disabled?: boolean };
 
 type SelectBoxProps = {
+  variant?: SelectBoxVariant;
   options: SelectOption[];
   value: string;
   onChange: (value: string) => void;
+  onTriggerClick?: () => void;
   placeholder?: string;
   size?: UIComponentSize;
   fullWidth?: boolean;
@@ -24,8 +28,12 @@ type SelectBoxProps = {
 const base =
   'relative inline-flex items-center justify-between border transition-all duration-200 focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-text-heading ease-in-out';
 
-const variants = {
-  outline: `
+const variants: Record<SelectBoxVariant, string> = {
+  default: `
+    border border-foreground bg-foreground text-white
+    disabled:opacity-30 disabled:cursor-not-allowed
+  `,
+  ghost: `
     border-border bg-white text-text
     enabled:hover:bg-background
     disabled:opacity-30 disabled:cursor-not-allowed
@@ -54,9 +62,11 @@ const sizes: Record<
 };
 
 function SelectBox({
+  variant = 'ghost',
   options,
   value,
   onChange,
+  onTriggerClick,
   placeholder = '선택하세요.',
   size = 'md',
   fullWidth = false,
@@ -104,6 +114,14 @@ function SelectBox({
     if (disabled) return;
     setOpen((v) => !v);
   }, [disabled]);
+
+  const onTrigger = useCallback(() => {
+    toggleOpen();
+  }, [toggleOpen]);
+
+  useEffect(() => {
+    if (open) onTriggerClick?.();
+  }, [open, onTriggerClick]);
 
   const selectAt = useCallback(
     (idx: number) => {
@@ -198,11 +216,11 @@ function SelectBox({
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={activeId}
         disabled={disabled}
-        onClick={toggleOpen}
+        onClick={onTrigger}
         onKeyDown={onKeyDown}
         className={cn(
           base,
-          variants.outline,
+          variants[variant],
           s.field,
           s.text,
           fullWidth && 'w-full',
@@ -224,8 +242,12 @@ function SelectBox({
         <Icon
           name='ArrowDropDown'
           className={cn(
-            !disabled ? 'text-foreground/60' : 'text-foreground/30',
             'absolute right-4',
+            disabled
+              ? 'text-foreground/30'
+              : variant === 'default'
+                ? 'text-white/90'
+                : 'text-foreground/60',
           )}
         />
       </button>
