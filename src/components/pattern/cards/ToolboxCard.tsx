@@ -1,4 +1,5 @@
 import SectionHeader from '@components/pattern/SectionHeader';
+import RepeatCountControl from '@components/pattern/toolbox/RepeatCountControl';
 import StitchBasePicker from '@components/pattern/toolbox/StitchBasePicker';
 import StitchVariationSelector from '@components/pattern/toolbox/StitchVariationSelector';
 import Card from '@components/ui/Card';
@@ -15,6 +16,7 @@ function ToolboxCard() {
       <div className='flex flex-col gap-6'>
         <StitchBasePicker />
         <StitchVariationSelector />
+        <RepeatCountControl />
       </div>
     </Card>
   );
