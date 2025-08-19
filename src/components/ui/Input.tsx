@@ -51,7 +51,7 @@ function Input({
   error,
 }: InputProps) {
   return (
-    <div>
+    <div className={cn(fullWidth && 'w-full')}>
       {label && (
         <label
           className={cn(
