@@ -30,10 +30,11 @@ const StitchItem = memo(function StitchItem({
   onClick: (c: StitchCode) => void;
 }) {
   const handleClick = useCallback(() => onClick(code), [onClick, code]);
+
   return (
     <Button
       variant='ghost'
-      className='flex flex-col gap-1.5 text-sm'
+      className='flex flex-col items-center gap-1.5 text-sm'
       onClick={handleClick}
       aria-label={`${label} 선택 (${code})`}
     >
