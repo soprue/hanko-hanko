@@ -36,5 +36,20 @@ export default function generateIconTypesPlugin(): Plugin {
 }
 
 function runGenerateScript() {
-  spawn('npm', ['run', 'generate:icon-types'], { stdio: 'inherit' });
+  // spawn('npm', ['run', 'generate:icon-types'], { stdio: 'inherit' });
+
+  // npm 대신 npx ts-node 직접 실행
+  const scriptPath = path.resolve(__dirname, './generate-icon-types.ts');
+
+  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const args = ['ts-node', scriptPath];
+
+  const child = spawn(command, args, {
+    stdio: 'inherit',
+    shell: true, // Windows에서 인자 파싱 문제 방지
+  });
+
+  child.on('error', (err) => {
+    console.error('❌ Failed to run generate-icon-types script:', err);
+  });
 }
