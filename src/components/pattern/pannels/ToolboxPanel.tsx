@@ -7,7 +7,7 @@ import YarnColorPicker from '@components/pattern/toolbox/YarnColorPicker';
 import Card from '@components/ui/Card';
 import Icon from '@components/ui/Icon';
 
-function ToolboxCard() {
+function ToolboxPanel() {
   return (
     <Card>
       <SectionHeader
@@ -26,4 +26,4 @@ function ToolboxCard() {
   );
 }
 
-export default ToolboxCard;
+export default ToolboxPanel;

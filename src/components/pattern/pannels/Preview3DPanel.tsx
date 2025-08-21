@@ -1,9 +1,9 @@
 import SectionHeader from '@components/pattern/SectionHeader';
+import Pattern3DCanvas from '@components/pattern/viewers/Pattern3DCanvas';
 import Card from '@components/ui/Card';
 import Icon from '@components/ui/Icon';
-import Pattern3DCanvas from '../viewers/Pattern3DCanvas';
 
-function Preview3DCard() {
+function Preview3DPanel() {
   return (
     <Card>
       <SectionHeader
@@ -16,4 +16,4 @@ function Preview3DCard() {
   );
 }
 
-export default Preview3DCard;
+export default Preview3DPanel;
