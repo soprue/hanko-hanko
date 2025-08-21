@@ -1,7 +1,9 @@
 import SectionHeader from '@components/pattern/SectionHeader';
+import PatternAdder from '@components/pattern/toolbox/PatternAdder';
 import RepeatCountControl from '@components/pattern/toolbox/RepeatCountControl';
 import StitchBasePicker from '@components/pattern/toolbox/StitchBasePicker';
 import StitchVariationSelector from '@components/pattern/toolbox/StitchVariationSelector';
+import YarnColorPicker from '@components/pattern/toolbox/YarnColorPicker';
 import Card from '@components/ui/Card';
 import Icon from '@components/ui/Icon';
 
@@ -17,6 +19,8 @@ function ToolboxCard() {
         <StitchBasePicker />
         <StitchVariationSelector />
         <RepeatCountControl />
+        <PatternAdder />
+        <YarnColorPicker />
       </div>
     </Card>
   );

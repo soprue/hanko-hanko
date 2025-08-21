@@ -7,6 +7,7 @@ import { RgbaColorPicker, RgbColorPicker } from 'react-colorful';
 import type { RGBA } from '@/types/colorPicker';
 import Button from '@components/ui/Button';
 import Icon from '@components/ui/Icon';
+import { cn } from '@utils/cn';
 import { clamp, hexToRgb, rgbaString, rgbaToHex } from '@utils/colorPicker';
 
 type ColorPickerProps = {
@@ -180,10 +181,10 @@ function ColorPicker({
 
   return (
     <div
-      className={
-        'flex w-full max-w-[640px] flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm ' +
-        (className ?? '')
-      }
+      className={cn(
+        'border-border flex w-full max-w-[640px] flex-col gap-4 rounded-2xl border bg-white p-4',
+        className,
+      )}
     >
       <div className='colorPicker'>
         {showAlpha ? (
