@@ -1,6 +1,7 @@
 import SectionHeader from '@components/pattern/SectionHeader';
 import Card from '@components/ui/Card';
 import Icon from '@components/ui/Icon';
+import Pattern3DCanvas from '../viewers/Pattern3DCanvas';
 
 function Preview3DCard() {
   return (
@@ -9,6 +10,8 @@ function Preview3DCard() {
         title='3D 미리보기'
         help={<Icon name='Cube' width={20} className='text-primary' />}
       />
+
+      <Pattern3DCanvas />
     </Card>
   );
 }
