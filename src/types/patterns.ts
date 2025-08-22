@@ -8,7 +8,7 @@ type Arity =
   | null;
 
 // 토큰: "SC-INC2", "DC-DEC3", "SC"(그냥 기본코)
-type StitchToken = {
+export type StitchToken = {
   id: string;
   base: StitchCode;
   arity: Arity; // null이면 그냥 기본코
@@ -17,18 +17,25 @@ type StitchToken = {
 
 // 동작: 토큰들을 하나의 묶음으로, 그룹 반복 가능
 // (SC, SC-INC2) × 6 같은 표현을 위해
-type Operation = {
+export type Operation = {
   id: string;
   tokens: StitchToken[];
   repeat: number;
 };
 
 // 단
-type Round = {
+export type Round = {
   id: string;
   ops: Operation[];
   totalStitches?: number;
 };
+
+type RoundMeta = {
+  roundIndex: number; // 1단, 2단 …
+  warnings?: string[]; // 유효성 경고
+};
+
+export type RoundWithMeta = Round & { meta?: RoundMeta };
 
 /* 사용 예시 */
 
