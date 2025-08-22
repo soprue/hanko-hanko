@@ -25,6 +25,7 @@ export default tseslint.config([
           './tsconfig.json',
           './tsconfig.app.json',
           './tsconfig.node.json',
+          './scripts/tsconfig.json',
         ],
       },
       ecmaVersion: 2020,
