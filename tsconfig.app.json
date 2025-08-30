@@ -33,6 +33,7 @@
       "@constants/*": ["src/constants/*"],
       "@hooks/*": ["src/hooks/*"],
       "@pages/*": ["src/pages/*"],
+      "@store/*": ["src/store/*"],
       "@styles/*": ["src/styles/*"],
       "@utils/*": ["src/utils/*"]
     }
