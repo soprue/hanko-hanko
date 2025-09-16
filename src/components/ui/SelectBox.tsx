@@ -7,13 +7,17 @@ import { cn } from '@utils/cn';
 
 type SelectBoxVariant = 'default' | 'ghost';
 
-type SelectOption = { label: string; value: string; disabled?: boolean };
+type SelectOption = {
+  label: string;
+  value: string | number;
+  disabled?: boolean;
+};
 
 type SelectBoxProps = {
   variant?: SelectBoxVariant;
   options: SelectOption[];
-  value: string;
-  onChange: (value: string) => void;
+  value: string | number;
+  onChange: (value: string | number) => void;
   onTriggerClick?: () => void;
   placeholder?: string;
   size?: UIComponentSize;
@@ -82,6 +86,9 @@ function SelectBox({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const onTriggerClickRef = useRef<(() => void) | undefined>(undefined);
+  const prevOpenRef = useRef(false);
+
   useClickOutside({
     enabled: open,
     refs: [triggerRef, menuRef],
@@ -120,8 +127,15 @@ function SelectBox({
   }, [toggleOpen]);
 
   useEffect(() => {
-    if (open) onTriggerClick?.();
-  }, [open, onTriggerClick]);
+    onTriggerClickRef.current = onTriggerClick ?? undefined;
+  }, [onTriggerClick]);
+
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      onTriggerClickRef.current?.();
+    }
+    prevOpenRef.current = open;
+  }, [open]);
 
   const selectAt = useCallback(
     (idx: number) => {

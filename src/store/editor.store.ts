@@ -31,7 +31,7 @@ type EditorState = {
   selectToken: (id?: string) => void;
 
   // draft setters
-  pickBase: (code: StitchCode) => void;
+  setBase: (code: StitchCode) => void;
   setArity: (arity: Arity) => void;
   setTimes: (n: number) => void;
   toggleGrouping: () => void;
@@ -73,7 +73,7 @@ export const useEditorStore = create<EditorState>()(
           s.selection.tokenId = id;
         }),
 
-      pickBase: (code) =>
+      setBase: (code) =>
         set((s) => {
           s.draft.base = code;
         }),

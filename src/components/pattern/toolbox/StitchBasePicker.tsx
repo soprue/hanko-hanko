@@ -15,7 +15,7 @@ const BASE_STITCHES: Array<{
   { code: 'DC', label: '긴뜨기' },
   { code: 'CH', label: '사슬뜨기' },
   { code: 'HDC', label: '한길긴뜨기' },
-  { code: 'SLST', label: '빼뜨기', codeText: 'SL ST' }, // 표시용 공백 처리
+  { code: 'SLST', label: '빼뜨기', codeText: 'SL ST' },
 ];
 
 const StitchItem = memo(function StitchItem({
@@ -48,13 +48,13 @@ const StitchItem = memo(function StitchItem({
 
 function StitchBasePicker() {
   const selectedBase = useEditorStore((s) => s.draft.base);
-  const pickBase = useEditorStore((s) => s.pickBase);
+  const setBase = useEditorStore((s) => s.setBase);
 
   const handleSelect = useCallback(
     (c: StitchCode) => {
-      pickBase(c);
+      setBase(c);
     },
-    [pickBase],
+    [setBase],
   );
 
   return (
