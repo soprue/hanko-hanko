@@ -1,10 +1,13 @@
-import { useState } from 'react';
-
 import SectionTitle from '@components/pattern/toolbox/SectionTitle';
 import Button from '@components/ui/Button';
+import { useEditorStore } from '@store/editor.store';
 
 function RepeatCountControl() {
-  const [count, setCount] = useState(0);
+  const count = useEditorStore((s) => s.draft.times);
+  const setCount = useEditorStore((s) => s.setTimes);
+
+  const dec = () => setCount(count - 1);
+  const inc = () => setCount(count + 1);
 
   return (
     <div>
@@ -15,7 +18,7 @@ function RepeatCountControl() {
           variant='ghost'
           size='sm'
           className='!border-[#E0DCD5]'
-          onClick={() => setCount(count - 1)}
+          onClick={dec}
         >
           -
         </Button>
@@ -24,7 +27,7 @@ function RepeatCountControl() {
           variant='ghost'
           size='sm'
           className='!border-[#E0DCD5]'
-          onClick={() => setCount(count + 1)}
+          onClick={inc}
         >
           +
         </Button>
