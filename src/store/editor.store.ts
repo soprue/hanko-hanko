@@ -5,6 +5,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { Arity, StitchCode, StitchToken } from '@/types/patterns';
 import { uid } from '@store/pattern.calc';
 import { usePatternStore } from '@store/pattern.store';
+import { produce } from 'immer';
 
 type Selection = {
   roundId?: string;
@@ -21,7 +22,7 @@ type Draft = {
   tokens: StitchToken[]; // grouping이 true일 때만 사용
 };
 
-type EditorState = {
+export type EditorState = {
   selection: Selection;
   draft: Draft;
 
@@ -34,11 +35,13 @@ type EditorState = {
   setBase: (code: StitchCode) => void;
   setArity: (arity: Arity) => void;
   setTimes: (n: number) => void;
-  toggleGrouping: () => void;
+  setGrouping: (v: boolean) => void;
   setRepeat: (n: number) => void;
 
   // draft workflows
   stageCurrentToken: () => void; // base + arity + times -> tokens에 누적
+  removeStagedToken: (index: number) => void;
+  moveStagedToken: (from: number, to: number) => void;
   clearDraft: () => void;
 
   // commit
@@ -46,7 +49,7 @@ type EditorState = {
 };
 
 const initialDraft: Draft = {
-  base: undefined,
+  base: 'MR',
   arity: null,
   times: 1,
   grouping: false,
@@ -73,27 +76,62 @@ export const useEditorStore = create<EditorState>()(
           s.selection.tokenId = id;
         }),
 
-      setBase: (code) =>
-        set((s) => {
-          s.draft.base = code;
-        }),
+      setBase: (code) => {
+        const curr = get().draft.base;
+        if (curr === code) return;
+        set(
+          (s) => {
+            s.draft.base = code;
+          },
+          false,
+          'editor/setBase',
+        );
+      },
+
       setArity: (arity) =>
         set((s) => {
           s.draft.arity = arity;
         }),
-      setTimes: (n) =>
-        set((s) => {
-          s.draft.times = Math.max(1, Math.trunc(n || 1));
-        }),
-      toggleGrouping: () =>
-        set((s) => {
-          s.draft.grouping = !s.draft.grouping;
-          if (!s.draft.grouping) s.draft.tokens = []; // 그룹 해제 시 누적 초기화
-        }),
-      setRepeat: (n) =>
-        set((s) => {
-          s.draft.repeat = Math.max(1, Math.trunc(n || 1));
-        }),
+
+      setTimes: (n: number) => {
+        const clamped = Math.max(1, Math.trunc(n || 1));
+        const curr = get().draft.times;
+        if (curr === clamped) return;
+        set(
+          (s) => {
+            s.draft.times = clamped;
+          },
+          false,
+          'editor/setTimes',
+        );
+      },
+
+      setGrouping: (v: boolean) => {
+        const next = !!v;
+        const curr = get().draft.grouping;
+        if (curr === next) return;
+        set(
+          (s) => {
+            s.draft.grouping = next;
+            if (!next) s.draft.tokens = [];
+          },
+          false,
+          'editor/setGrouping',
+        );
+      },
+
+      setRepeat: (n: number) => {
+        const clamped = Math.max(1, Math.trunc(n || 1));
+        const curr = get().draft.repeat;
+        if (curr === clamped) return;
+        set(
+          (s) => {
+            s.draft.repeat = clamped;
+          },
+          false,
+          'editor/setRepeat',
+        );
+      },
 
       stageCurrentToken: () =>
         set((s) => {
@@ -101,6 +139,30 @@ export const useEditorStore = create<EditorState>()(
           if (!base) return;
           s.draft.tokens.push({ id: uid(), base, arity: arity!, times });
         }),
+
+      removeStagedToken: (index) =>
+        set((s) => {
+          s.draft.tokens.splice(index, 1);
+        }),
+
+      moveStagedToken: (from, to) =>
+        set(
+          produce<EditorState>((s) => {
+            const arr = s.draft.tokens;
+
+            if (
+              from === to ||
+              from < 0 ||
+              to < 0 ||
+              from >= arr.length ||
+              to >= arr.length
+            )
+              return;
+
+            const [moved] = arr.splice(from, 1);
+            arr.splice(to, 0, moved);
+          }),
+        ),
 
       clearDraft: () =>
         set((s) => {
