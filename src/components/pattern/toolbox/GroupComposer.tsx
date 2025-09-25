@@ -10,7 +10,7 @@ import Button from '@components/ui/Button';
 import CheckBox from '@components/ui/CheckBox';
 import NumberStepper from '@components/ui/NumberStepper';
 import { useEditorStore } from '@store/editor.store';
-import { formatArity, tokenLabel } from '@utils/pattern';
+import { arityHuman, tokenLabelCompact } from '@utils/patternUI';
 
 function GroupComposer() {
   const isGrouping = useEditorStore((s) => s.draft.grouping);
@@ -61,7 +61,7 @@ function GroupComposer() {
               <div className='flex items-center gap-2'>
                 {base && <span>{base}</span>}+
                 <span>
-                  <span>{formatArity(arity)}</span>
+                  <span>{arityHuman(arity)}</span>
                 </span>{' '}
                 +{times && <span>×{times}</span>}
               </div>
@@ -97,7 +97,7 @@ function GroupComposer() {
                       key={t.id}
                       id={t.id}
                       index={i}
-                      label={tokenLabel(t)}
+                      label={tokenLabelCompact(t)}
                       onRemove={() => removeStagedToken(i)}
                       onMove={moveStagedToken}
                     />

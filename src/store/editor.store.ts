@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
@@ -5,7 +6,6 @@ import { immer } from 'zustand/middleware/immer';
 import type { Arity, StitchCode, StitchToken } from '@/types/patterns';
 import { uid } from '@store/pattern.calc';
 import { usePatternStore } from '@store/pattern.store';
-import { produce } from 'immer';
 
 type Selection = {
   roundId?: string;
@@ -13,7 +13,7 @@ type Selection = {
   tokenId?: string;
 };
 
-type Draft = {
+export type Draft = {
   base?: StitchCode; // 선택된 기법
   arity: Arity; // inc, dec, null
   times: number; // 동일 토큰 연속 반복
@@ -170,25 +170,15 @@ export const useEditorStore = create<EditorState>()(
         }),
 
       commitAsOperation: () => {
-        const { selection, draft } = get();
-        const roundId = selection.roundId;
+        const { draft } = get();
+
+        const roundId = usePatternStore.getState().selectedRoundId;
         if (!roundId) return;
 
         // 그룹 사용 여부에 따라 tokens 빌드
         let tokens: StitchToken[] = [];
         if (draft.grouping) {
-          tokens = draft.tokens.length
-            ? draft.tokens
-            : draft.base
-              ? [
-                  {
-                    id: uid(),
-                    base: draft.base,
-                    arity: draft.arity,
-                    times: draft.times,
-                  },
-                ]
-              : [];
+          tokens = draft.tokens.length ? draft.tokens : [];
         } else if (draft.base) {
           tokens = [
             {
@@ -199,11 +189,10 @@ export const useEditorStore = create<EditorState>()(
             },
           ];
         }
-
         if (tokens.length === 0) return;
 
         const op = { id: uid(), tokens, repeat: draft.repeat };
-        usePatternStore.getState().addOperation(roundId, op); // 패턴에 반영
+        usePatternStore.getState().addOperation(roundId, op);
         get().clearDraft();
       },
     })),

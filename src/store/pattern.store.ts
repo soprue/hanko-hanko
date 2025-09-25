@@ -49,8 +49,16 @@ export const usePatternStore = create<PatternState>()(
 
         newPattern: () => {
           set((s) => {
-            s.rounds = [];
-            s.selectedRoundId = undefined;
+            const id = uid();
+            s.rounds = [
+              {
+                id,
+                ops: [],
+                meta: { roundIndex: 1 },
+              },
+            ];
+            s.rounds = recalc(s.rounds);
+            s.selectedRoundId = id;
           });
         },
 
@@ -164,7 +172,17 @@ export const usePatternStore = create<PatternState>()(
       {
         name: 'pattern',
         storage: createJSONStorage(() => localStorage),
+        onRehydrateStorage: () => () => {
+          const st = usePatternStore.getState();
+          if (!st.rounds.length) {
+            const id = st.addRound();
+            st.selectRound(id);
+          } else if (!st.selectedRoundId) {
+            st.selectRound(st.rounds[0].id);
+          }
+        },
       },
     ),
+    { name: 'pattern' },
   ),
 );

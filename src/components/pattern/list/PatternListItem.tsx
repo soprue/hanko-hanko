@@ -1,26 +1,16 @@
-import type { Operation, StitchToken } from '@/types/patterns';
+import type { Operation } from '@/types/patterns';
+import { tokenLabelCompact } from '@utils/patternUI';
 
 type PatternListItemProps = {
   item: Operation;
 };
 
 function PatternListItem({ item }: PatternListItemProps) {
-  const tokenLabel = (t: StitchToken) => {
-    const arity =
-      t.arity == null
-        ? ''
-        : t.arity.kind === 'inc'
-          ? `-INC${t.arity.n}`
-          : `-DEC${t.arity.n}`;
-    const times = t.times && t.times > 1 ? ` ×${t.times}` : '';
-    return `${t.base}${arity}${times}`;
-  };
-
   const opLabel = (op: Operation) => {
     const group =
       op.tokens.length === 1
-        ? tokenLabel(op.tokens[0])
-        : `(${op.tokens.map(tokenLabel).join(', ')})`;
+        ? tokenLabelCompact(op.tokens[0])
+        : `(${op.tokens.map(tokenLabelCompact).join(', ')})`;
     return op.repeat > 1 ? `${group} ×${op.repeat}` : group;
   };
 
