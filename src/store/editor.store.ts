@@ -1,5 +1,4 @@
-import { produce } from 'immer';
-import { create } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
@@ -7,7 +6,7 @@ import type { RGBA } from '@/types/colorPicker';
 import type { Arity, StitchCode, StitchToken } from '@/types/patterns';
 import { uid } from '@store/pattern.calc';
 import { usePatternStore } from '@store/pattern.store';
-import { clamp } from '@/utils/colorPicker';
+import { clamp } from '@utils/colorPicker';
 
 type Selection = {
   roundId?: string;
@@ -52,7 +51,7 @@ export type EditorState = {
   commitAsOperation: () => void; // patternStore에 반영
 };
 
-const initialDraft: Draft = {
+const createInitialDraft = (): Draft => ({
   base: 'MR',
   arity: null,
   times: 1,
@@ -60,165 +59,180 @@ const initialDraft: Draft = {
   repeat: 1,
   tokens: [],
   color: { r: 67, g: 151, b: 235, a: 1 },
-};
+});
 
-export const useEditorStore = create<EditorState>()(
-  devtools(
-    immer((set, get) => ({
-      selection: {},
-      draft: initialDraft,
+export type EditorStore = UseBoundStore<StoreApi<EditorState>>;
 
-      selectRound: (id) =>
-        set((s) => {
-          s.selection.roundId = id;
-        }),
-      selectOp: (id) =>
-        set((s) => {
-          s.selection.opId = id;
-        }),
-      selectToken: (id) =>
-        set((s) => {
-          s.selection.tokenId = id;
-        }),
+declare global {
+  var __APP_EDITOR_STORE__: EditorStore | undefined;
+}
 
-      setBase: (code) => {
-        const curr = get().draft.base;
-        if (curr === code) return;
-        set(
-          (s) => {
-            s.draft.base = code;
-          },
-          false,
-          'editor/setBase',
-        );
-      },
+const createEditorStore = (): EditorStore =>
+  create<EditorState>()(
+    devtools(
+      immer((set, get) => ({
+        selection: {},
+        draft: createInitialDraft(),
 
-      setArity: (arity) =>
-        set((s) => {
-          s.draft.arity = arity;
-        }),
-
-      setTimes: (n: number) => {
-        const clamped = Math.max(1, Math.trunc(n || 1));
-        const curr = get().draft.times;
-        if (curr === clamped) return;
-        set(
-          (s) => {
-            s.draft.times = clamped;
-          },
-          false,
-          'editor/setTimes',
-        );
-      },
-
-      setGrouping: (v: boolean) => {
-        const next = !!v;
-        const curr = get().draft.grouping;
-        if (curr === next) return;
-        set(
-          (s) => {
-            s.draft.grouping = next;
-            if (!next) s.draft.tokens = [];
-          },
-          false,
-          'editor/setGrouping',
-        );
-      },
-
-      setRepeat: (n: number) => {
-        const clamped = Math.max(1, Math.trunc(n || 1));
-        const curr = get().draft.repeat;
-        if (curr === clamped) return;
-        set(
-          (s) => {
-            s.draft.repeat = clamped;
-          },
-          false,
-          'editor/setRepeat',
-        );
-      },
-
-      setColor: (rgba: RGBA) =>
-        set(
-          (s) => {
-            const r = clamp(Math.round(rgba.r), 0, 255);
-            const g = clamp(Math.round(rgba.g), 0, 255);
-            const b = clamp(Math.round(rgba.b), 0, 255);
-            const a = Math.max(0, Math.min(1, rgba.a ?? 1));
-            s.draft.color = { r, g, b, a };
-          },
-          false,
-          'editor/setColor',
-        ),
-
-      stageCurrentToken: () =>
-        set((s) => {
-          const { base, arity, times } = s.draft;
-          if (!base) return;
-          s.draft.tokens.push({ id: uid(), base, arity: arity!, times });
-        }),
-
-      removeStagedToken: (index) =>
-        set((s) => {
-          s.draft.tokens.splice(index, 1);
-        }),
-
-      moveStagedToken: (from, to) =>
-        set(
-          produce<EditorState>((s) => {
-            const arr = s.draft.tokens;
-
-            if (
-              from === to ||
-              from < 0 ||
-              to < 0 ||
-              from >= arr.length ||
-              to >= arr.length
-            )
-              return;
-
-            const [moved] = arr.splice(from, 1);
-            arr.splice(to, 0, moved);
+        selectRound: (id) =>
+          set((s) => {
+            s.selection.roundId = id;
           }),
-        ),
+        selectOp: (id) =>
+          set((s) => {
+            s.selection.opId = id;
+          }),
+        selectToken: (id) =>
+          set((s) => {
+            s.selection.tokenId = id;
+          }),
 
-      clearDraft: () =>
-        set((s) => {
-          s.draft = initialDraft;
-        }),
-
-      commitAsOperation: () => {
-        const { draft } = get();
-
-        const roundId = usePatternStore.getState().selectedRoundId;
-        if (!roundId) return;
-
-        // 그룹 사용 여부에 따라 tokens 빌드
-        let tokens: StitchToken[] = [];
-        if (draft.grouping) {
-          tokens = draft.tokens.length ? draft.tokens : [];
-        } else if (draft.base) {
-          tokens = [
-            {
-              id: uid(),
-              base: draft.base,
-              arity: draft.arity,
-              times: draft.times,
+        setBase: (code) => {
+          const curr = get().draft.base;
+          if (curr === code) return;
+          set(
+            (s) => {
+              s.draft.base = code;
             },
-          ];
-        }
-        if (tokens.length === 0) return;
+            false,
+            'editor/setBase',
+          );
+        },
 
-        const op = {
-          id: uid(),
-          tokens,
-          repeat: draft.repeat,
-          color: draft.color!,
-        };
-        usePatternStore.getState().addOperation(roundId, op);
-        get().clearDraft();
-      },
-    })),
-    { name: 'editor' },
-  ),
-);
+        setArity: (arity) =>
+          set((s) => {
+            s.draft.arity = arity;
+          }),
+
+        setTimes: (n: number) => {
+          const clamped = Math.max(1, Math.trunc(n || 1));
+          const curr = get().draft.times;
+          if (curr === clamped) return;
+          set(
+            (s) => {
+              s.draft.times = clamped;
+            },
+            false,
+            'editor/setTimes',
+          );
+        },
+
+        setGrouping: (v: boolean) => {
+          const next = !!v;
+          const curr = get().draft.grouping;
+          if (curr === next) return;
+          set(
+            (s) => {
+              s.draft.grouping = next;
+              if (!next) s.draft.tokens = [];
+            },
+            false,
+            'editor/setGrouping',
+          );
+        },
+
+        setRepeat: (n: number) => {
+          const clamped = Math.max(1, Math.trunc(n || 1));
+          const curr = get().draft.repeat;
+          if (curr === clamped) return;
+          set(
+            (s) => {
+              s.draft.repeat = clamped;
+            },
+            false,
+            'editor/setRepeat',
+          );
+        },
+
+        setColor: (rgba: RGBA) =>
+          set(
+            (s) => {
+              const r = clamp(Math.round(rgba.r), 0, 255);
+              const g = clamp(Math.round(rgba.g), 0, 255);
+              const b = clamp(Math.round(rgba.b), 0, 255);
+              const a = Math.max(0, Math.min(1, rgba.a ?? 1));
+              s.draft.color = { r, g, b, a };
+            },
+            false,
+            'editor/setColor',
+          ),
+
+        stageCurrentToken: () =>
+          set((s) => {
+            const { base, arity, times } = s.draft;
+            if (!base) return;
+            s.draft.tokens.push({ id: uid(), base, arity: arity!, times });
+          }),
+
+        removeStagedToken: (index) =>
+          set((s) => {
+            s.draft.tokens.splice(index, 1);
+          }),
+
+        moveStagedToken: (from, to) =>
+          set(
+            (s) => {
+              const arr = s.draft.tokens;
+              if (
+                from === to ||
+                from < 0 ||
+                to < 0 ||
+                from >= arr.length ||
+                to >= arr.length
+              )
+                return;
+              const [moved] = arr.splice(from, 1);
+              arr.splice(to, 0, moved);
+            },
+            false,
+            'editor/moveStagedToken',
+          ),
+
+        clearDraft: () =>
+          set(
+            (s) => {
+              s.draft = createInitialDraft(); // 새 객체 팩토리 유지
+            },
+            false,
+            'editor/clearDraft',
+          ),
+
+        commitAsOperation: () => {
+          const { draft } = get();
+
+          const roundId = usePatternStore.getState().selectedRoundId;
+          if (!roundId) return;
+
+          // 그룹 사용 여부에 따라 tokens 빌드
+          let tokens: StitchToken[] = [];
+          if (draft.grouping) {
+            tokens = draft.tokens.length ? draft.tokens : [];
+          } else if (draft.base) {
+            tokens = [
+              {
+                id: uid(),
+                base: draft.base,
+                arity: draft.arity,
+                times: draft.times,
+              },
+            ];
+          }
+          if (tokens.length === 0) return;
+
+          const op = {
+            id: uid(),
+            tokens,
+            repeat: draft.repeat,
+            color: draft.color!,
+          };
+          usePatternStore.getState().addOperation(roundId, op);
+          get().clearDraft();
+        },
+      })),
+      { name: 'editor' },
+    ),
+  );
+
+export const useEditorStore: EditorStore =
+  globalThis.__APP_EDITOR_STORE__ ??
+  (globalThis.__APP_EDITOR_STORE__ = createEditorStore());
