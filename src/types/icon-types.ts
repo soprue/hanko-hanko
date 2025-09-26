@@ -4,6 +4,7 @@ export type IconType =
   | 'Copy'
   | 'Cube'
   | 'Droplet'
+  | 'Edit'
   | 'Help'
   | 'List'
   | 'Pallet'
