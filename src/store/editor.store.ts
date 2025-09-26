@@ -3,9 +3,11 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
+import type { RGBA } from '@/types/colorPicker';
 import type { Arity, StitchCode, StitchToken } from '@/types/patterns';
 import { uid } from '@store/pattern.calc';
 import { usePatternStore } from '@store/pattern.store';
+import { clamp } from '@/utils/colorPicker';
 
 type Selection = {
   roundId?: string;
@@ -19,7 +21,8 @@ export type Draft = {
   times: number; // 동일 토큰 연속 반복
   grouping: boolean; // 그룹 사용 여부
   repeat: number; // 그룹 반복
-  tokens: StitchToken[]; // grouping이 true일 때만 사용
+  tokens: StitchToken[];
+  color?: RGBA;
 };
 
 export type EditorState = {
@@ -37,6 +40,7 @@ export type EditorState = {
   setTimes: (n: number) => void;
   setGrouping: (v: boolean) => void;
   setRepeat: (n: number) => void;
+  setColor: (color: RGBA) => void;
 
   // draft workflows
   stageCurrentToken: () => void; // base + arity + times -> tokens에 누적
@@ -55,6 +59,7 @@ const initialDraft: Draft = {
   grouping: false,
   repeat: 1,
   tokens: [],
+  color: { r: 67, g: 151, b: 235, a: 1 },
 };
 
 export const useEditorStore = create<EditorState>()(
@@ -133,6 +138,19 @@ export const useEditorStore = create<EditorState>()(
         );
       },
 
+      setColor: (rgba: RGBA) =>
+        set(
+          (s) => {
+            const r = clamp(Math.round(rgba.r), 0, 255);
+            const g = clamp(Math.round(rgba.g), 0, 255);
+            const b = clamp(Math.round(rgba.b), 0, 255);
+            const a = Math.max(0, Math.min(1, rgba.a ?? 1));
+            s.draft.color = { r, g, b, a };
+          },
+          false,
+          'editor/setColor',
+        ),
+
       stageCurrentToken: () =>
         set((s) => {
           const { base, arity, times } = s.draft;
@@ -191,7 +209,12 @@ export const useEditorStore = create<EditorState>()(
         }
         if (tokens.length === 0) return;
 
-        const op = { id: uid(), tokens, repeat: draft.repeat };
+        const op = {
+          id: uid(),
+          tokens,
+          repeat: draft.repeat,
+          color: draft.color!,
+        };
         usePatternStore.getState().addOperation(roundId, op);
         get().clearDraft();
       },

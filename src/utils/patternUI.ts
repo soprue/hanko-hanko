@@ -45,6 +45,7 @@ export function draftToOperation(d: Draft): Operation | null {
       id: 'op-prev',
       tokens: d.tokens,
       repeat: Math.max(1, d.repeat || 1),
+      color: d.color!,
     };
   }
 
@@ -57,7 +58,7 @@ export function draftToOperation(d: Draft): Operation | null {
     arity: d.arity,
     times,
   };
-  return { id: 'op-prev', tokens: [token], repeat: 1 };
+  return { id: 'op-prev', tokens: [token], repeat: 1, color: d.color! };
 }
 
 export function draftToString(d: Draft): string {
