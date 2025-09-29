@@ -1,5 +1,5 @@
-import { usePatternStore } from '@/store/pattern.store';
 import PatternListItem from '@components/pattern/list/PatternListItem';
+import { usePatternStore } from '@store/pattern.store';
 
 function PatternList() {
   const rounds = usePatternStore((s) => s.rounds);
@@ -13,6 +13,8 @@ function PatternList() {
         const roundTotal =
           round.totalStitches != null ? `총 ${round.totalStitches}코` : '';
 
+        const warning = round.meta?.warnings;
+
         return (
           <div>
             <div className='mb-3 text-sm'>
@@ -21,9 +23,13 @@ function PatternList() {
 
             <div className='flex flex-col gap-2'>
               {round.ops.map((op) => {
-                return <PatternListItem item={op} />;
+                return <PatternListItem item={op} warning={warning} />;
               })}
             </div>
+
+            {warning && warning.length !== 0 && (
+              <p className='text-warning mt-1 text-xs'>⚠ {warning[0]}</p>
+            )}
           </div>
         );
       })}

@@ -1,13 +1,15 @@
-import Icon from '@/components/ui/Icon';
 import type { Operation } from '@/types/patterns';
-import { rgbaToHex } from '@/utils/colorPicker';
+import Icon from '@components/ui/Icon';
+import { cn } from '@utils/cn';
+import { rgbaToHex } from '@utils/colorPicker';
 import { tokenLabelCompact } from '@utils/patternUI';
 
 type PatternListItemProps = {
   item: Operation;
+  warning?: string[];
 };
 
-function PatternListItem({ item }: PatternListItemProps) {
+function PatternListItem({ item, warning }: PatternListItemProps) {
   const opLabel = (op: Operation) => {
     const group =
       op.tokens.length === 1
@@ -18,8 +20,15 @@ function PatternListItem({ item }: PatternListItemProps) {
 
   const color = rgbaToHex(item.color);
 
+  console.log(warning);
+
   return (
-    <div className='border-border flex items-center justify-between rounded-xl border px-5 py-2'>
+    <div
+      className={cn(
+        warning?.length !== 0 && 'border-warning',
+        'border-border flex items-center justify-between rounded-xl border px-5 py-2',
+      )}
+    >
       <div className='flex items-center gap-3 text-sm'>
         <div
           className='size-3.5 rounded-full'
