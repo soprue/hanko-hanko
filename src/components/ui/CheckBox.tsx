@@ -1,16 +1,15 @@
 import { useId } from 'react';
 
+import type { UIComponentSize } from '@/types/ui';
 import Icon from '@components/ui/Icon';
 import { cn } from '@utils/cn';
-
-type CheckBoxSize = 'sm' | 'md' | 'lg';
 
 type CheckBoxProps = {
   checked?: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
   disabled?: boolean;
-  size?: CheckBoxSize;
+  size?: UIComponentSize;
   className?: string;
 };
 
@@ -18,7 +17,7 @@ const base =
   'inline-flex w-fit items-center transition-all duration-200 ease-in-out';
 
 const sizes: Record<
-  CheckBoxSize,
+  UIComponentSize,
   { box: string; icon: number; gap: string; label: string }
 > = {
   sm: { box: 'w-4 h-4', icon: 16, gap: 'gap-1.5', label: 'text-sm' },
