@@ -129,7 +129,13 @@ export function validateRound(
   if (hasDec && !prevRound) warns.push('줄임(DEC)은 이전 단이 필요합니다.');
 
   // 늘림/줄임이 없는데 코 수 변화가 발생
-  if (!hasInc && !hasDec && prevTotal !== undefined && prevTotal !== total)
+  if (
+    total !== 0 &&
+    !hasInc &&
+    !hasDec &&
+    prevTotal !== undefined &&
+    prevTotal !== total
+  )
     warns.push(
       `늘림/줄임 없이 코 수가 ${prevTotal}에서 ${total}으로 변경되었습니다.`,
     );

@@ -1,15 +1,23 @@
 import type { Operation } from '@/types/patterns';
 import Icon from '@components/ui/Icon';
+import { useGlobalModalStore } from '@store/modal.store';
+import { usePatternStore } from '@store/pattern.store';
 import { cn } from '@utils/cn';
 import { rgbaToHex } from '@utils/colorPicker';
 import { tokenLabelCompact } from '@utils/patternUI';
 
 type PatternListItemProps = {
+  roundId: string;
   item: Operation;
   warning?: string[];
 };
 
-function PatternListItem({ item, warning }: PatternListItemProps) {
+function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
+  const openModal = useGlobalModalStore((s) => s.openModal);
+  const closeModal = useGlobalModalStore((s) => s.closeModal);
+
+  const removeOperation = usePatternStore((s) => s.removeOperation);
+
   const opLabel = (op: Operation) => {
     const group =
       op.tokens.length === 1
@@ -20,7 +28,20 @@ function PatternListItem({ item, warning }: PatternListItemProps) {
 
   const color = rgbaToHex(item.color);
 
-  console.log(warning);
+  const handleDelete = () => {
+    openModal({
+      title: '정말 삭제할까요?',
+      children: '이 작업은 되돌릴 수 없어요.',
+      size: 'sm',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onCancel: closeModal,
+      onConfirm: () => {
+        removeOperation(roundId, item.id);
+        closeModal();
+      },
+    });
+  };
 
   return (
     <div
@@ -40,7 +61,7 @@ function PatternListItem({ item, warning }: PatternListItemProps) {
         <button className='cursor-pointer'>
           <Icon name='Edit' width={14} color='#333' />
         </button>
-        <button className='cursor-pointer'>
+        <button className='cursor-pointer' onClick={handleDelete}>
           <Icon name='Trash' width={16} color='#333' />
         </button>
       </div>

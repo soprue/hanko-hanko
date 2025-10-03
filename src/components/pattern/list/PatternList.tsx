@@ -16,14 +16,21 @@ function PatternList() {
         const warning = round.meta?.warnings;
 
         return (
-          <div>
+          <div key={round.id}>
             <div className='mb-3 text-sm'>
               <span className='font-bold'>{roundTitle}</span> - {roundTotal}
             </div>
 
             <div className='flex flex-col gap-2'>
               {round.ops.map((op) => {
-                return <PatternListItem item={op} warning={warning} />;
+                return (
+                  <PatternListItem
+                    key={op.id}
+                    roundId={round.id}
+                    item={op}
+                    warning={warning}
+                  />
+                );
               })}
             </div>
 
