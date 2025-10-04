@@ -43,7 +43,7 @@ function Modal({
   open,
   onClose,
   title,
-  size,
+  size = 'md',
   className,
   children,
   confirmText = '확인',

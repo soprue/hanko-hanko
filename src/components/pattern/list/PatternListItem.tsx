@@ -15,7 +15,6 @@ type PatternListItemProps = {
 function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
   const openModal = useGlobalModalStore((s) => s.openModal);
   const closeModal = useGlobalModalStore((s) => s.closeModal);
-
   const removeOperation = usePatternStore((s) => s.removeOperation);
 
   const opLabel = (op: Operation) => {
@@ -32,9 +31,7 @@ function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
     openModal({
       title: '정말 삭제할까요?',
       children: '이 작업은 되돌릴 수 없어요.',
-      size: 'sm',
       confirmText: '삭제',
-      cancelText: '취소',
       onCancel: closeModal,
       onConfirm: () => {
         removeOperation(roundId, item.id);
