@@ -1,5 +1,6 @@
 import type { Operation } from '@/types/patterns';
 import Icon from '@components/ui/Icon';
+import { useEditorStore } from '@store/editor.store';
 import { useGlobalModalStore } from '@store/modal.store';
 import { usePatternStore } from '@store/pattern.store';
 import { cn } from '@utils/cn';
@@ -15,6 +16,8 @@ type PatternListItemProps = {
 function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
   const openModal = useGlobalModalStore((s) => s.openModal);
   const closeModal = useGlobalModalStore((s) => s.closeModal);
+  const beginEdit = useEditorStore((s) => s.beginEdit);
+  const selectRound = usePatternStore((s) => s.selectRound);
   const removeOperation = usePatternStore((s) => s.removeOperation);
 
   const opLabel = (op: Operation) => {
@@ -26,6 +29,11 @@ function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
   };
 
   const color = rgbaToHex(item.color);
+
+  const handleEdit = () => {
+    selectRound(roundId);
+    beginEdit(roundId, item);
+  };
 
   const handleDelete = () => {
     openModal({
@@ -55,7 +63,7 @@ function PatternListItem({ roundId, item, warning }: PatternListItemProps) {
         <p>{opLabel(item)}</p>
       </div>
       <div className='flex items-center gap-2'>
-        <button className='cursor-pointer'>
+        <button className='cursor-pointer' onClick={handleEdit}>
           <Icon name='Edit' width={14} color='#333' />
         </button>
         <button className='cursor-pointer' onClick={handleDelete}>

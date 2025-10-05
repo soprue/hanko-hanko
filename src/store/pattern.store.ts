@@ -2,8 +2,9 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-import type { Operation, RoundWithMeta, StitchToken } from '@/types/patterns';
+import type { Operation, RoundWithMeta } from '@/types/patterns';
 import { recalc, uid } from '@store/pattern.calc';
+import { current } from 'immer';
 
 type PatternState = {
   rounds: RoundWithMeta[];
@@ -14,28 +15,21 @@ type PatternState = {
   newPattern: () => void;
   setRounds: (rounds: RoundWithMeta[]) => void;
 
-  addRound: () => string; // returns new round Id
+  addRound: () => string;
   removeRound: (roundId: string) => void;
   selectRound: (roundId?: string) => void;
 
   addOperation: (roundId: string, op: Operation) => void;
   removeOperation: (roundId: string, opId: string) => void;
-
-  addToken: (roundId: string, opId: string, token: StitchToken) => void;
-  removeToken: (roundId: string, opId: string, tokenIndex: number) => void;
-  updateToken: (
+  updateOperation: (
     roundId: string,
     opId: string,
-    tokenIndex: number,
-    patch: Partial<StitchToken>,
+    patch: Partial<Omit<Operation, 'id'>>,
   ) => void;
 
   // Import/Export
   serialize: () => string; // JSON string
   deserialize: (json: string) => void; // from JSON
-
-  // 편의 유틸
-  bumpAll: () => void; // 합계/경고 재계산만 강제
 };
 
 type WithPersist<T> = T & {
@@ -134,38 +128,24 @@ const createPatternStore = (): PatternStore => {
             });
           },
 
-          addToken: (roundId, opId, token) => {
+          updateOperation: (roundId, opId, patch) => {
             set((s) => {
-              const round = s.rounds.find((r) => r.id === roundId);
-              if (!round) return;
-              const op = round.ops.find((o) => o.id === opId);
-              if (!op) return;
-              op.tokens.push(token);
-              s.rounds = recalc(s.rounds);
-            });
-          },
+              const base = current(s.rounds);
 
-          removeToken: (roundId, opId, tokenIndex) => {
-            set((s) => {
-              const round = s.rounds.find((r) => r.id === roundId);
-              if (!round) return;
-              const op = round.ops.find((o) => o.id === opId);
-              if (!op) return;
-              op.tokens = op.tokens.filter((_, i) => i !== tokenIndex);
-              s.rounds = recalc(s.rounds);
-            });
-          },
+              const patched = base.map((r) =>
+                r.id !== roundId
+                  ? r
+                  : {
+                      ...r,
+                      ops: r.ops.map((o) =>
+                        o.id === opId ? { ...o, ...patch } : o,
+                      ),
+                    },
+              );
 
-          updateToken: (roundId, opId, tokenIndex, patch) => {
-            set((s) => {
-              const round = s.rounds.find((r) => r.id === roundId);
-              if (!round) return;
-              const op = round.ops.find((o) => o.id === opId);
-              if (!op) return;
-              const token = op.tokens[tokenIndex];
-              if (!token) return;
-              Object.assign(token, patch);
-              s.rounds = recalc(s.rounds);
+              const next = recalc(patched);
+
+              s.rounds = next;
             });
           },
 
@@ -177,12 +157,6 @@ const createPatternStore = (): PatternStore => {
           deserialize: (json) => {
             const parsed = JSON.parse(json) as { rounds: RoundWithMeta[] };
             get().setRounds(parsed.rounds ?? []);
-          },
-
-          bumpAll: () => {
-            set((s) => {
-              s.rounds = recalc(s.rounds);
-            });
           },
         })),
         {

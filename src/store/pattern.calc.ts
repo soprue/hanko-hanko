@@ -120,30 +120,39 @@ export function validateRound(
     0,
   );
 
-  // MR은 1단에서만 권장
   const idx = round.meta?.roundIndex ?? 0;
   if (usesMR && idx > 1) warns.push('매직링(MR)은 보통 1단에서만 사용합니다.');
   if (mrCount > 1) warns.push('한 단에서 MR이 2번 이상 사용되었습니다.');
-
-  // 줄임(DEC) 사용 시 이전 단 필요
   if (hasDec && !prevRound) warns.push('줄임(DEC)은 이전 단이 필요합니다.');
 
   // 늘림/줄임이 없는데 코 수 변화가 발생
-  if (
-    total !== 0 &&
-    !hasInc &&
-    !hasDec &&
+  const comparable =
     prevTotal !== undefined &&
-    prevTotal !== total
-  )
-    warns.push(
-      `늘림/줄임 없이 코 수가 ${prevTotal}에서 ${total}으로 변경되었습니다.`,
+    !(
+      prevTotal === 0 &&
+      (prevRound?.ops ?? []).some((op) =>
+        op.tokens.some((t) => t.base === 'MR'),
+      )
     );
+
+  if (comparable) {
+    if (total > prevTotal && !hasInc) {
+      warns.push(
+        `이전 단보다 코 수가 증가했지만 늘림(inc)이 사용되지 않았어요. (${prevTotal}→${total})`,
+      );
+    }
+    if (total < prevTotal && !hasDec) {
+      warns.push(
+        `이전 단보다 코 수가 감소했지만 줄임(dec)이 사용되지 않았어요. (${prevTotal}→${total})`,
+      );
+    }
+  }
 
   // repeat <= 0
   round.ops.forEach((op, i) => {
-    if (!Number.isFinite(op.repeat) || op.repeat <= 0)
+    if (!Number.isFinite(op.repeat) || (op.repeat as number) <= 0) {
       warns.push(`[${i + 1}번째 그룹] repeat 값이 1 이상이어야 합니다.`);
+    }
   });
 
   return warns;
@@ -169,17 +178,22 @@ export function validateRound(
  * // 이제 next[i].totalStitches, next[i].meta.warnings를 UI에서 바로 사용 가능
  */
 export function recalc(rounds: RoundWithMeta[]): RoundWithMeta[] {
-  return rounds.map((r, i) => {
-    const next = { ...r };
-    const prev = i > 0 ? rounds[i - 1] : undefined;
+  let prevRecalc: RoundWithMeta | undefined;
 
-    next.totalStitches = producedByRound(next);
-    next.meta = {
-      ...(next.meta ?? { roundIndex: i + 1 }),
-      roundIndex: i + 1,
-      warnings: validateRound(next, prev),
+  return rounds.map((r, i) => {
+    const curr: RoundWithMeta = {
+      ...r,
+      totalStitches: producedByRound(r),
+      meta: {
+        ...(r.meta ?? {}),
+        roundIndex: i + 1,
+        warnings: [],
+      },
     };
 
-    return next;
+    curr.meta!.warnings = validateRound(curr, prevRecalc);
+
+    prevRecalc = curr;
+    return curr;
   });
 }

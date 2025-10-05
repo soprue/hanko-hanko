@@ -3,7 +3,12 @@ import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 import type { RGBA } from '@/types/colorPicker';
-import type { Arity, StitchCode, StitchToken } from '@/types/patterns';
+import type {
+  Arity,
+  Operation,
+  StitchCode,
+  StitchToken,
+} from '@/types/patterns';
 import { uid } from '@store/pattern.calc';
 import { usePatternStore } from '@store/pattern.store';
 import { clamp } from '@utils/colorPicker';
@@ -12,6 +17,7 @@ type Selection = {
   roundId?: string;
   opId?: string;
   tokenId?: string;
+  mode?: 'idle' | 'create' | 'edit';
 };
 
 export type Draft = {
@@ -28,10 +34,7 @@ export type EditorState = {
   selection: Selection;
   draft: Draft;
 
-  // selection
-  selectRound: (id?: string) => void;
   selectOp: (id?: string) => void;
-  selectToken: (id?: string) => void;
 
   // draft setters
   setBase: (code: StitchCode) => void;
@@ -47,6 +50,9 @@ export type EditorState = {
   moveStagedToken: (from: number, to: number) => void;
   clearDraft: () => void;
 
+  beginEdit: (roundId: string, op: Operation) => void;
+  cancelEdit: () => void;
+
   // commit
   commitAsOperation: () => void; // patternStore에 반영
 };
@@ -61,6 +67,39 @@ const createInitialDraft = (): Draft => ({
   color: { r: 67, g: 151, b: 235, a: 1 },
 });
 
+// 유틸: 현재 draft로부터 tokens 빌드
+const buildTokensFromDraft = (d: Draft): StitchToken[] => {
+  if (d.grouping) return d.tokens.slice(); // 그룹 모드면 누적 토큰 사용
+  if (!d.base) return [];
+  return [{ id: uid(), base: d.base, arity: d.arity, times: d.times }];
+};
+
+// 유틸: Operation을 draft로 적재
+const loadDraftFromOperation = (op: Operation): Draft => {
+  if (op.tokens.length === 1) {
+    const t = op.tokens[0];
+    return {
+      base: t.base,
+      arity: t.arity ?? null,
+      times: t.times ?? 1,
+      grouping: false,
+      repeat: op.repeat ?? 1,
+      tokens: [],
+      color: op.color,
+    };
+  }
+  // 토큰이 여러 개인 경우 => 그룹 편집
+  return {
+    base: undefined,
+    arity: null,
+    times: 1,
+    grouping: true,
+    repeat: op.repeat ?? 1,
+    tokens: op.tokens.map((t) => ({ ...t })), // 복사
+    color: op.color,
+  };
+};
+
 export type EditorStore = UseBoundStore<StoreApi<EditorState>>;
 
 declare global {
@@ -71,20 +110,12 @@ const createEditorStore = (): EditorStore =>
   create<EditorState>()(
     devtools(
       immer((set, get) => ({
-        selection: {},
+        selection: { mode: 'create' },
         draft: createInitialDraft(),
 
-        selectRound: (id) =>
-          set((s) => {
-            s.selection.roundId = id;
-          }),
         selectOp: (id) =>
           set((s) => {
             s.selection.opId = id;
-          }),
-        selectToken: (id) =>
-          set((s) => {
-            s.selection.tokenId = id;
           }),
 
         setBase: (code) => {
@@ -191,33 +222,47 @@ const createEditorStore = (): EditorStore =>
         clearDraft: () =>
           set(
             (s) => {
-              s.draft = createInitialDraft(); // 새 객체 팩토리 유지
+              s.draft = createInitialDraft();
             },
             false,
             'editor/clearDraft',
           ),
 
-        commitAsOperation: () => {
-          const { draft } = get();
+        beginEdit: (roundId: string, op: Operation) =>
+          set((s) => {
+            s.selection.roundId = roundId;
+            s.selection.opId = op.id;
+            s.selection.mode = 'edit';
+            s.draft = loadDraftFromOperation(op);
+          }),
 
+        cancelEdit: () =>
+          set((s) => {
+            s.selection.mode = 'create';
+            s.selection.opId = undefined;
+            s.draft = createInitialDraft();
+          }),
+
+        commitAsOperation: () => {
+          const { draft, selection } = get();
           const roundId = usePatternStore.getState().selectedRoundId;
           if (!roundId) return;
 
-          // 그룹 사용 여부에 따라 tokens 빌드
-          let tokens: StitchToken[] = [];
-          if (draft.grouping) {
-            tokens = draft.tokens.length ? draft.tokens : [];
-          } else if (draft.base) {
-            tokens = [
-              {
-                id: uid(),
-                base: draft.base,
-                arity: draft.arity,
-                times: draft.times,
-              },
-            ];
-          }
+          const tokens = buildTokensFromDraft(draft);
           if (tokens.length === 0) return;
+
+          // 편집 모드인 경우: updateOperation
+          if (selection.mode === 'edit' && selection.opId) {
+            usePatternStore
+              .getState()
+              .updateOperation(roundId, selection.opId, {
+                tokens,
+                repeat: draft.repeat,
+                color: draft.color!,
+              });
+            get().cancelEdit();
+            return;
+          }
 
           const op = {
             id: uid(),
