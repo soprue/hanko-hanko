@@ -39,7 +39,7 @@ export function uid() {
 export function producedByToken(token: StitchToken): number {
   const times = token.times ?? 1;
 
-  if (token.base === 'MR') return 0 * times;
+  if (token.base === 'MR' || token.base === 'SLST') return 0 * times;
 
   if (token.arity?.kind === 'inc') return token.arity.n * times;
   if (token.arity?.kind === 'dec') return 1 * times;
@@ -128,6 +128,7 @@ export function validateRound(
   // 늘림/줄임이 없는데 코 수 변화가 발생
   const comparable =
     prevTotal !== undefined &&
+    total !== 0 &&
     !(
       prevTotal === 0 &&
       (prevRound?.ops ?? []).some((op) =>

@@ -236,16 +236,23 @@ const createEditorStore = (): EditorStore =>
             s.draft = loadDraftFromOperation(op);
           }),
 
-        cancelEdit: () =>
+        cancelEdit: () => {
           set((s) => {
             s.selection.mode = 'create';
             s.selection.opId = undefined;
             s.draft = createInitialDraft();
-          }),
+          });
+
+          const ps = usePatternStore.getState();
+          const lastId = ps.rounds.at(-1)?.id;
+          if (lastId) ps.selectRound(lastId);
+        },
 
         commitAsOperation: () => {
           const { draft, selection } = get();
-          const roundId = usePatternStore.getState().selectedRoundId;
+          const ps = usePatternStore.getState();
+
+          const roundId = ps.selectedRoundId;
           if (!roundId) return;
 
           const tokens = buildTokensFromDraft(draft);
@@ -253,14 +260,15 @@ const createEditorStore = (): EditorStore =>
 
           // 편집 모드인 경우: updateOperation
           if (selection.mode === 'edit' && selection.opId) {
-            usePatternStore
-              .getState()
-              .updateOperation(roundId, selection.opId, {
-                tokens,
-                repeat: draft.repeat,
-                color: draft.color!,
-              });
+            ps.updateOperation(roundId, selection.opId, {
+              tokens,
+              repeat: draft.repeat,
+              color: draft.color!,
+            });
+
             get().cancelEdit();
+            const lastId = ps.rounds.at(-1)?.id;
+            if (lastId) ps.selectRound(lastId);
             return;
           }
 
@@ -270,7 +278,7 @@ const createEditorStore = (): EditorStore =>
             repeat: draft.repeat,
             color: draft.color!,
           };
-          usePatternStore.getState().addOperation(roundId, op);
+          ps.addOperation(roundId, op);
           get().clearDraft();
         },
       })),
