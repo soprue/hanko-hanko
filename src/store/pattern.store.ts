@@ -1,10 +1,10 @@
+import { current } from 'immer';
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 import type { Operation, RoundWithMeta } from '@/types/patterns';
 import { recalc, uid } from '@store/pattern.calc';
-import { current } from 'immer';
 
 type PatternState = {
   rounds: RoundWithMeta[];
@@ -26,6 +26,7 @@ type PatternState = {
     opId: string,
     patch: Partial<Omit<Operation, 'id'>>,
   ) => void;
+  moveOperation: (roundId: string, from: number, to: number) => void;
 
   // Import/Export
   serialize: () => string; // JSON string
@@ -146,6 +147,27 @@ const createPatternStore = (): PatternStore => {
               const next = recalc(patched);
 
               s.rounds = next;
+            });
+          },
+
+          moveOperation: (roundId, from, to) => {
+            set((s) => {
+              const r = s.rounds.find((x) => x.id === roundId);
+              if (!r) return;
+
+              const arr = r.ops;
+              if (
+                from === to ||
+                from < 0 ||
+                to < 0 ||
+                from >= arr.length ||
+                to >= arr.length
+              )
+                return;
+
+              const [moved] = arr.splice(from, 1);
+              arr.splice(to, 0, moved);
+              s.rounds = recalc(s.rounds);
             });
           },
 
