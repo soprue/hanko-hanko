@@ -1,188 +1,92 @@
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+
 import type { RoundWithMeta } from '@/types/patterns';
 import PatternListItem from '@components/pattern/list/PatternListItem';
-
-const roundsMock: RoundWithMeta[] = [
-  // [1단] MR, SC×6 → 총 6코
-  {
-    id: 'r1',
-    ops: [
-      {
-        id: 'r1-o1',
-        tokens: [{ id: 'r1-o1-t1', base: 'MR', arity: null }],
-        repeat: 1,
-      },
-      {
-        id: 'r1-o2',
-        tokens: [{ id: 'r1-o2-t1', base: 'SC', arity: null, times: 6 }],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 6,
-    meta: { roundIndex: 1 },
-  },
-
-  // [2단] SC-INC2×6 → 총 12코 (단일 코 반복 → times)
-  {
-    id: 'r2',
-    ops: [
-      {
-        id: 'r2-o1',
-        tokens: [
-          {
-            id: 'r2-o1-t1',
-            base: 'SC',
-            arity: { kind: 'inc', n: 2 },
-            times: 6,
-          },
-        ],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 12,
-    meta: { roundIndex: 2 },
-  },
-
-  // [3단] (SC, SC-INC2) ×6 → (1+2)=3 ×6 = 18코 (그룹 반복 → repeat)
-  {
-    id: 'r3',
-    ops: [
-      {
-        id: 'r3-o1',
-        tokens: [
-          { id: 'r3-o1-t1', base: 'SC', arity: null, times: 1 },
-          {
-            id: 'r3-o1-t2',
-            base: 'SC',
-            arity: { kind: 'inc', n: 2 },
-            times: 1,
-          },
-        ],
-        repeat: 6,
-      },
-    ],
-    totalStitches: 18,
-    meta: { roundIndex: 3 },
-  },
-
-  // [4단] SC×19 → 총 19코 (의도된 경고 예시)
-  {
-    id: 'r4',
-    ops: [
-      {
-        id: 'r4-o1',
-        tokens: [{ id: 'r4-o1-t1', base: 'SC', arity: null, times: 19 }],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 19,
-    meta: {
-      roundIndex: 4,
-    },
-  },
-  // [1단] MR, SC×6 → 총 6코
-  {
-    id: 'r1',
-    ops: [
-      {
-        id: 'r1-o1',
-        tokens: [{ id: 'r1-o1-t1', base: 'MR', arity: null }],
-        repeat: 1,
-      },
-      {
-        id: 'r1-o2',
-        tokens: [{ id: 'r1-o2-t1', base: 'SC', arity: null, times: 6 }],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 6,
-    meta: { roundIndex: 1 },
-  },
-
-  // [2단] SC-INC2×6 → 총 12코 (단일 코 반복 → times)
-  {
-    id: 'r2',
-    ops: [
-      {
-        id: 'r2-o1',
-        tokens: [
-          {
-            id: 'r2-o1-t1',
-            base: 'SC',
-            arity: { kind: 'inc', n: 2 },
-            times: 6,
-          },
-        ],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 12,
-    meta: { roundIndex: 2 },
-  },
-
-  // [3단] (SC, SC-INC2) ×6 → (1+2)=3 ×6 = 18코 (그룹 반복 → repeat)
-  {
-    id: 'r3',
-    ops: [
-      {
-        id: 'r3-o1',
-        tokens: [
-          { id: 'r3-o1-t1', base: 'SC', arity: null, times: 1 },
-          {
-            id: 'r3-o1-t2',
-            base: 'SC',
-            arity: { kind: 'inc', n: 2 },
-            times: 1,
-          },
-        ],
-        repeat: 6,
-      },
-    ],
-    totalStitches: 18,
-    meta: { roundIndex: 3 },
-  },
-
-  // [4단] SC×19 → 총 19코 (의도된 경고 예시)
-  {
-    id: 'r4',
-    ops: [
-      {
-        id: 'r4-o1',
-        tokens: [{ id: 'r4-o1-t1', base: 'SC', arity: null, times: 19 }],
-        repeat: 1,
-      },
-    ],
-    totalStitches: 19,
-    meta: {
-      roundIndex: 4,
-    },
-  },
-];
+import SortableOperation from '@components/pattern/list/SortableOperation';
+import { useGlobalModalStore } from '@store/modal.store';
+import { usePatternStore } from '@store/pattern.store';
 
 function PatternList() {
+  const openModal = useGlobalModalStore((s) => s.openModal);
+  const closeModal = useGlobalModalStore((s) => s.closeModal);
+  const removeRound = usePatternStore((s) => s.removeRound);
+  const rounds = usePatternStore((s) => s.rounds);
+  const moveOperation = usePatternStore((s) => s.moveOperation);
+
+  const handleDelete = (round: RoundWithMeta) => {
+    openModal({
+      title: `정말 ${round.meta?.roundIndex}단을 삭제할까요?`,
+      children: (
+        <div>
+          이 단에 포함된 모든 동작이 함께 삭제됩니다. <br />이 작업은 되돌릴 수
+          없어요.
+        </div>
+      ),
+      confirmText: '삭제',
+      onCancel: closeModal,
+      onConfirm: () => {
+        removeRound(round.id);
+        closeModal();
+      },
+    });
+  };
+
   return (
-    <div className='flex flex-auto flex-col gap-8'>
-      {roundsMock.map((rounds) => {
-        const roundTitle = rounds.meta?.roundIndex
-          ? `[${rounds.meta.roundIndex}단]`
-          : '';
-        const roundTotal =
-          rounds.totalStitches != null ? `총 ${rounds.totalStitches}코` : '';
+    <DndProvider backend={HTML5Backend}>
+      <div className='flex flex-auto flex-col gap-8'>
+        {rounds.map((round, i) => {
+          const roundTitle = round.meta?.roundIndex
+            ? `[${round.meta.roundIndex}단]`
+            : '';
+          const roundTotal =
+            round.totalStitches != null ? `총 ${round.totalStitches}코` : '';
+          const warning = round.meta?.warnings;
 
-        return (
-          <div>
-            <div className='mb-3 text-sm'>
-              <span className='font-bold'>{roundTitle}</span> - {roundTotal}
-            </div>
+          return (
+            <div key={round.id}>
+              <div className='mb-3 flex items-center justify-between text-sm'>
+                <div>
+                  <span className='font-bold'>{roundTitle}</span> - {roundTotal}
+                </div>
+                {i > 0 && (
+                  <button
+                    className='text-text-muted cursor-pointer text-xs underline'
+                    onClick={() => handleDelete(round)}
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
 
-            <div className='flex flex-col gap-2'>
-              {rounds.ops.map((op) => {
-                return <PatternListItem item={op} />;
-              })}
+              <div className='flex flex-col gap-2'>
+                {round.ops.map((op, idx) => {
+                  return (
+                    <SortableOperation
+                      key={op.id}
+                      id={op.id}
+                      index={idx}
+                      roundId={round.id}
+                      onMove={(from, to) => moveOperation(round.id, from, to)}
+                    >
+                      <PatternListItem
+                        roundId={round.id}
+                        item={op}
+                        warning={warning}
+                      />
+                    </SortableOperation>
+                  );
+                })}
+              </div>
+
+              {warning && warning.length !== 0 && (
+                <p className='text-warning mt-1 text-xs'>⚠ {warning[0]}</p>
+              )}
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </DndProvider>
   );
 }
 

@@ -1,8 +1,10 @@
+import type { RGBA } from './colorPicker';
+
 // 기본 코(늘림/줄임의 대상)
 export type StitchCode = 'MR' | 'CH' | 'SC' | 'HDC' | 'DC' | 'TR' | 'SLST';
 
 // 가변도(늘림/줄임)
-type Arity =
+export type Arity =
   | { kind: 'inc'; n: 2 | 3 | 4 } // 예: INC2(한 코에 2개 뜸)
   | { kind: 'dec'; n: 2 | 3 | 4 } // 예: DEC3(3코 모아뜨기)
   | null;
@@ -20,6 +22,7 @@ export type StitchToken = {
 export type Operation = {
   id: string;
   tokens: StitchToken[];
+  color: RGBA;
   repeat: number;
 };
 

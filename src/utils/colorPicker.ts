@@ -136,7 +136,7 @@ function rgbaToHex({ r, g, b, a = 1 }: RGBA, includeAlpha?: boolean) {
 
   const hex = includeAlpha ? `${rr}${gg}${bb}${aa}` : `${rr}${gg}${bb}`;
 
-  return `#${hex}`.toUpperCase();
+  return `#${hex}`.toLowerCase();
 }
 
 /**

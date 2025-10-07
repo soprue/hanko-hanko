@@ -13,6 +13,7 @@ type ButtonProps = {
   disabled?: boolean;
   disableHover?: boolean;
   className?: string;
+  ref?: React.RefObject<HTMLButtonElement>;
 };
 
 const base =
@@ -48,6 +49,7 @@ function Button({
   disabled = false,
   disableHover = true,
   className,
+  ref,
 }: ButtonProps) {
   return (
     <button
@@ -61,6 +63,7 @@ function Button({
         className,
       )}
       disabled={disabled}
+      ref={ref}
     >
       {children}
     </button>

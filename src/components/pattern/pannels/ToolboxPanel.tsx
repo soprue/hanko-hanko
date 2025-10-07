@@ -1,4 +1,5 @@
 import SectionHeader from '@components/pattern/SectionHeader';
+import GroupComposer from '@components/pattern/toolbox/GroupComposer';
 import PatternAdder from '@components/pattern/toolbox/PatternAdder';
 import RepeatCountControl from '@components/pattern/toolbox/RepeatCountControl';
 import StitchBasePicker from '@components/pattern/toolbox/StitchBasePicker';
@@ -19,6 +20,7 @@ function ToolboxPanel() {
         <StitchBasePicker />
         <StitchVariationSelector />
         <RepeatCountControl />
+        <GroupComposer />
         <PatternAdder />
         <YarnColorPicker />
       </div>
