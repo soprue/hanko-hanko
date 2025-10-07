@@ -16,6 +16,7 @@ const DEC_OPTIONS = [
 ];
 
 function StitchVariationSelector() {
+  const selectedBase = useEditorStore((s) => s.draft.base);
   const selectedArity = useEditorStore((s) => s.draft.arity);
   const setArity = useEditorStore((s) => s.setArity);
 
@@ -46,6 +47,7 @@ function StitchVariationSelector() {
             })
           }
           triggerLabel='늘림'
+          disabled={selectedBase === 'MR' || selectedBase === 'SLST'}
         />
         <SelectBox
           variant={selectedArity?.kind === 'dec' ? 'default' : 'ghost'}
@@ -62,6 +64,7 @@ function StitchVariationSelector() {
             })
           }
           triggerLabel='줄임'
+          disabled={selectedBase === 'MR' || selectedBase === 'SLST'}
         />
       </div>
     </div>

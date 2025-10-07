@@ -3,6 +3,7 @@ import Button from '@components/ui/Button';
 import { useEditorStore } from '@store/editor.store';
 
 function RepeatCountControl() {
+  const selectedBase = useEditorStore((s) => s.draft.base);
   const count = useEditorStore((s) => s.draft.times);
   const setCount = useEditorStore((s) => s.setTimes);
 
@@ -19,6 +20,7 @@ function RepeatCountControl() {
           size='sm'
           className='!border-[#E0DCD5]'
           onClick={dec}
+          disabled={selectedBase === 'MR' || selectedBase === 'SLST'}
         >
           -
         </Button>
@@ -28,6 +30,7 @@ function RepeatCountControl() {
           size='sm'
           className='!border-[#E0DCD5]'
           onClick={inc}
+          disabled={selectedBase === 'MR' || selectedBase === 'SLST'}
         >
           +
         </Button>
