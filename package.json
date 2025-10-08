@@ -15,6 +15,8 @@
     "generate:icon-types": "ts-node scripts/generate-icon-types.ts"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.3.0",
     "@tailwindcss/vite": "^4.1.11",
     "immer": "^10.1.1",
     "motion": "^12.23.22",
@@ -24,6 +26,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
+    "three": "^0.180.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
