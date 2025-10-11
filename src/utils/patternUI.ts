@@ -1,5 +1,5 @@
-import type { Draft } from '@/store/editor.store';
 import type { Arity, Operation, Round, StitchToken } from '@/types/patterns';
+import type { Draft } from '@store/editor.store';
 
 // '변형' 컴팩트 표기: -INC2 / -DEC3 / ''
 export function aritySuffix(arity: Arity): string {

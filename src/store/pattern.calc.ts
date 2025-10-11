@@ -72,12 +72,34 @@ export function producedByOp(op: Operation): number {
 
 /**
  * 한 단(Round)이 생성하는 총 코 수를 계산합니다.
+ * - "라운드의 첫 번째 평탄화 토큰이 CH"라면, 해당 CH는 0코(기둥코)로 간주한다.
+ *   이후에 나오는 CH는 일반 규칙(1코 × times) 적용.
  *
  * @param r 계산 대상 라운드
  * @returns 해당 라운드가 생성하는 총 코 수
  */
 export function producedByRound(r: RoundWithMeta): number {
-  return r.ops.reduce((sum, op) => sum + producedByOp(op), 0);
+  let total = 0;
+  let flatIndex = 0;
+  let prevBase: string | undefined;
+
+  for (const op of r.ops) {
+    const rep = op.repeat ?? 1;
+
+    for (let k = 0; k < rep; k++) {
+      for (const t of op.tokens) {
+        const isTurningChain =
+          t.base === 'CH' && (flatIndex === 0 || prevBase === 'MR');
+
+        total += isTurningChain ? 0 : producedByToken(t);
+
+        prevBase = t.base;
+        flatIndex++;
+      }
+    }
+  }
+
+  return total;
 }
 
 /**
@@ -230,4 +252,9 @@ export function recalc(rounds: RoundWithMeta[]): RoundWithMeta[] {
     prevRecalc = curr;
     return curr;
   });
+}
+
+export function totalOfRound(r: RoundWithMeta): number {
+  if (typeof r.totalStitches === 'number') return r.totalStitches;
+  return r.ops.reduce((sum, op) => sum + producedByOp(op), 0);
 }
