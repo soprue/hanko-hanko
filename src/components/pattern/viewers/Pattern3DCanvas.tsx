@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import {
+  Center,
   Environment,
   Instance,
   Instances,
@@ -21,71 +22,95 @@ export type StitchInstance = {
   roundIndex: number;
 };
 
+const TORUS_R = 1.5;
+const TORUS_TUBE = 0.6;
+const PACKING = 0.5;
+const LAYER_HEIGHT = 1.3;
+const TILT = 0;
+const PHASE_DRIFT = Math.PI / 3;
+const LOOSENESS = 1.0;
+const SMOOTHING = 0.65;
+const MIN_RADIUS = 2;
+
 function buildStitches(rounds: RoundWithMeta[]): StitchInstance[] {
-  // ---- 레이아웃 상수 ----
-  const BASE_RADIUS = 3.5; // 1단 최소 반경(필요 시 자동으로 더 벌어짐)
-  const ROUND_GAP = 1; // 단 간격(반경 증가)
-  const LAYER_HEIGHT = 2; // 단 높이(가까워 보이도록 낮춤)
-  const TILT = 0; // 살짝 눕혀서 겹침 느낌 강화
-
-  // 스티치(토러스) 실제 외경 = 2 * (TORUS_R + TORUS_TUBE)
-  const TORUS_R = 1.5; // 토러스 큰반지름(스티치의 '링' 크기)
-  const TORUS_TUBE = 0.6; // 토러스 두께
-  const PACKING = 0.5;
-
-  // 인접 스티치의 중심 간 거리가 외경에 맞춰지도록 반경을 보정
   const outerDiameter = 2 * (TORUS_R + TORUS_TUBE) * PACKING;
   const fitRadius = (N: number) => {
-    // chord = 2 * R * sin(pi/N) >= outerDiameter
-    const R = outerDiameter / (2 * Math.sin(Math.PI / N));
-    return R;
+    const n = Math.max(3, N);
+    return outerDiameter / (2 * Math.sin(Math.PI / n));
   };
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
   const out: StitchInstance[] = [];
+  let prevRadius: number | null = null;
 
-  rounds.forEach((round, rIdx) => {
+  for (let rIdx = 0; rIdx < rounds.length; rIdx++) {
+    const round = rounds[rIdx];
     const roundIndex = round.meta?.roundIndex ?? rIdx + 1;
     const N = Math.max(1, totalOfRound(round));
 
-    // 기본 반경과 '붙는' 데 필요한 반경 중 큰 값을 사용
-    const baseR = BASE_RADIUS + (roundIndex - 1) * ROUND_GAP;
-    const radius = Math.max(baseR, fitRadius(N));
+    // 반경(그 라운드의 코 수에 따라)
+    const desired: number = Math.max(MIN_RADIUS, fitRadius(N) * LOOSENESS);
+    const radius: number =
+      prevRadius == null ? desired : lerp(prevRadius, desired, SMOOTHING);
+    prevRadius = radius;
 
     const y = (roundIndex - 1) * LAYER_HEIGHT;
     const step = (Math.PI * 2) / N;
+    const baseAngle =
+      -Math.PI / 2 +
+      (roundIndex % 2 === 0 ? step * 0.5 : 0) +
+      roundIndex * PHASE_DRIFT;
 
-    // 지그재그 시접 느낌: 짝수 단은 반 스텝 오프셋
-    const startAngle = -Math.PI / 2 + (roundIndex % 2 === 0 ? step * 0.5 : 0);
+    // 삼각함수 테이블(라운드당 1회 계산)
+    const cosTable: number[] = new Array(N);
+    const sinTable: number[] = new Array(N);
+    const rotYTable: number[] = new Array(N);
+    for (let k = 0; k < N; k++) {
+      const ang = baseAngle + k * step;
+      cosTable[k] = Math.cos(ang);
+      sinTable[k] = Math.sin(ang);
+      rotYTable[k] = -ang;
+    }
 
-    let cursor = 0;
-    round.ops.forEach((op) => {
+    // 스티치 채우기(모듈로 제거, k를 직접 래핑)
+    let k = 0;
+    for (let oi = 0; oi < round.ops.length; oi++) {
+      const op = round.ops[oi];
       const count = producedByOp(op);
       const color = rgbaToHex(op.color);
+
       for (let i = 0; i < count; i++) {
-        const k = cursor % N;
-        const ang = startAngle + k * step;
-        const x = Math.cos(ang) * radius;
-        const z = Math.sin(ang) * radius;
-        const rotation: [number, number, number] = [TILT, -ang, 0];
-        out.push({ position: [x, y, z], rotation, color, roundIndex });
-        cursor++;
+        const x = cosTable[k] * radius;
+        const z = sinTable[k] * radius;
+        out.push({
+          position: [x, y, z],
+          rotation: [TILT, rotYTable[k], 0],
+          color,
+          roundIndex,
+        });
+        k++;
+        if (k === N) k = 0;
       }
-    });
-  });
+    }
+  }
 
   return out;
 }
 
-function Scene({ stitches }: { stitches: StitchInstance[] }) {
+const Scene = memo(function Scene({
+  stitches,
+}: {
+  stitches: StitchInstance[];
+}) {
   return (
     <>
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 10, 5]} intensity={0.9} />
       <Environment preset='city' />
 
-      <group>
+      <Center>
         <Instances limit={Math.max(1, stitches.length)}>
-          <torusGeometry args={[1.5, 1.55, 16, 24]} />
+          <torusGeometry args={[TORUS_R, TORUS_TUBE, 16, 24]} />
           <meshStandardMaterial roughness={1} />
           {stitches.map((s, i) => (
             <Instance
@@ -96,12 +121,12 @@ function Scene({ stitches }: { stitches: StitchInstance[] }) {
             />
           ))}
         </Instances>
-      </group>
+      </Center>
 
-      <OrbitControls enableDamping makeDefault />
+      <OrbitControls enableDamping makeDefault target={[0, 0, 0]} />
     </>
   );
-}
+});
 
 function Pattern3DCanvas() {
   const rounds = usePatternStore((s) => s.rounds);
