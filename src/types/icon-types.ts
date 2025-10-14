@@ -5,8 +5,11 @@ export type IconType =
   | 'Cube'
   | 'Droplet'
   | 'Edit'
+  | 'Export'
   | 'Help'
+  | 'Import'
   | 'List'
   | 'Pallet'
   | 'Plus'
+  | 'Save'
   | 'Trash';
