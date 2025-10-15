@@ -1,5 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 import type { RGBA } from '@/types/colorPicker';
@@ -30,10 +30,25 @@ export type Draft = {
   color?: RGBA;
 };
 
+const DEFAULT_SWATCHES: RGBA[] = [
+  { r: 255, g: 255, b: 255, a: 1 },
+  { r: 0, g: 0, b: 0, a: 1 },
+  { r: 248, g: 113, b: 113, a: 1 },
+  { r: 251, g: 191, b: 36, a: 1 },
+  { r: 52, g: 211, b: 153, a: 1 },
+  { r: 96, g: 165, b: 250, a: 1 },
+  { r: 167, g: 139, b: 250, a: 1 },
+  { r: 244, g: 114, b: 182, a: 1 },
+];
+
 export type EditorState = {
   selection: Selection;
   draft: Draft;
   lastColor: RGBA;
+
+  swatches: RGBA[];
+  addSwatch: (c?: RGBA) => void;
+  clearSwatches: () => void;
 
   selectOp: (id?: string) => void;
 
@@ -111,188 +126,229 @@ const initial = createInitialDraft();
 
 const createEditorStore = (): EditorStore =>
   create<EditorState>()(
-    devtools(
-      immer((set, get) => ({
-        selection: { mode: 'create' },
-        draft: initial,
-        lastColor: initial.color!,
+    persist(
+      devtools(
+        immer((set, get) => ({
+          selection: { mode: 'create' },
+          draft: initial,
+          lastColor: initial.color!,
+          swatches: DEFAULT_SWATCHES,
 
-        selectOp: (id) =>
-          set((s) => {
-            s.selection.opId = id;
-          }),
+          addSwatch: (c) =>
+            set(
+              (s) => {
+                const color = c ?? s.draft.color ?? s.lastColor;
+                if (!color) return;
+                const key = (x: RGBA) => `${x.r},${x.g},${x.b},${x.a}`;
+                const next = [
+                  color,
+                  ...s.swatches.filter((x) => key(x) !== key(color)),
+                ].slice(0, 24);
+                s.swatches = next;
+              },
+              false,
+              'editor/addSwatch',
+            ),
 
-        setBase: (code) => {
-          const curr = get().draft.base;
-          if (curr === code) return;
-          set(
-            (s) => {
-              s.draft.base = code;
-            },
-            false,
-            'editor/setBase',
-          );
-        },
+          clearSwatches: () =>
+            set(
+              (s) => {
+                s.swatches = DEFAULT_SWATCHES;
+              },
+              false,
+              'editor/clearSwatches',
+            ),
 
-        setArity: (arity) =>
-          set((s) => {
-            s.draft.arity = arity;
-          }),
+          selectOp: (id) =>
+            set((s) => {
+              s.selection.opId = id;
+            }),
 
-        setTimes: (n: number) => {
-          const clamped = Math.max(1, Math.trunc(n || 1));
-          const curr = get().draft.times;
-          if (curr === clamped) return;
-          set(
-            (s) => {
-              s.draft.times = clamped;
-            },
-            false,
-            'editor/setTimes',
-          );
-        },
+          setBase: (code) => {
+            const curr = get().draft.base;
+            if (curr === code) return;
+            set(
+              (s) => {
+                s.draft.base = code;
+              },
+              false,
+              'editor/setBase',
+            );
+          },
 
-        setGrouping: (v: boolean) => {
-          const next = !!v;
-          const curr = get().draft.grouping;
-          if (curr === next) return;
-          set(
-            (s) => {
-              s.draft.grouping = next;
-              if (!next) s.draft.tokens = [];
-            },
-            false,
-            'editor/setGrouping',
-          );
-        },
+          setArity: (arity) =>
+            set((s) => {
+              s.draft.arity = arity;
+            }),
 
-        setRepeat: (n: number) => {
-          const clamped = Math.max(1, Math.trunc(n || 1));
-          const curr = get().draft.repeat;
-          if (curr === clamped) return;
-          set(
-            (s) => {
-              s.draft.repeat = clamped;
-            },
-            false,
-            'editor/setRepeat',
-          );
-        },
+          setTimes: (n: number) => {
+            const clamped = Math.max(1, Math.trunc(n || 1));
+            const curr = get().draft.times;
+            if (curr === clamped) return;
+            set(
+              (s) => {
+                s.draft.times = clamped;
+              },
+              false,
+              'editor/setTimes',
+            );
+          },
 
-        setColor: (rgba: RGBA) =>
-          set(
-            (s) => {
-              const r = clamp(Math.round(rgba.r), 0, 255);
-              const g = clamp(Math.round(rgba.g), 0, 255);
-              const b = clamp(Math.round(rgba.b), 0, 255);
-              const a = Math.max(0, Math.min(1, rgba.a ?? 1));
-              const next = { r, g, b, a };
-              s.draft.color = next;
-              s.lastColor = next;
-            },
-            false,
-            'editor/setColor',
-          ),
+          setGrouping: (v: boolean) => {
+            const next = !!v;
+            const curr = get().draft.grouping;
+            if (curr === next) return;
+            set(
+              (s) => {
+                s.draft.grouping = next;
+                if (!next) s.draft.tokens = [];
+              },
+              false,
+              'editor/setGrouping',
+            );
+          },
 
-        stageCurrentToken: () =>
-          set((s) => {
-            const { base, arity, times } = s.draft;
-            if (!base) return;
-            s.draft.tokens.push({ id: uid(), base, arity: arity!, times });
-          }),
+          setRepeat: (n: number) => {
+            const clamped = Math.max(1, Math.trunc(n || 1));
+            const curr = get().draft.repeat;
+            if (curr === clamped) return;
+            set(
+              (s) => {
+                s.draft.repeat = clamped;
+              },
+              false,
+              'editor/setRepeat',
+            );
+          },
 
-        removeStagedToken: (index) =>
-          set((s) => {
-            s.draft.tokens.splice(index, 1);
-          }),
+          setColor: (rgba: RGBA) =>
+            set(
+              (s) => {
+                const r = clamp(Math.round(rgba.r), 0, 255);
+                const g = clamp(Math.round(rgba.g), 0, 255);
+                const b = clamp(Math.round(rgba.b), 0, 255);
+                const a = Math.max(0, Math.min(1, rgba.a ?? 1));
+                const next = { r, g, b, a };
+                s.draft.color = next;
+                s.lastColor = next;
+              },
+              false,
+              'editor/setColor',
+            ),
 
-        moveStagedToken: (from, to) =>
-          set(
-            (s) => {
-              const arr = s.draft.tokens;
-              if (
-                from === to ||
-                from < 0 ||
-                to < 0 ||
-                from >= arr.length ||
-                to >= arr.length
-              )
-                return;
-              const [moved] = arr.splice(from, 1);
-              arr.splice(to, 0, moved);
-            },
-            false,
-            'editor/moveStagedToken',
-          ),
+          stageCurrentToken: () =>
+            set((s) => {
+              const { base, arity, times } = s.draft;
+              if (!base) return;
+              s.draft.tokens.push({ id: uid(), base, arity: arity!, times });
+            }),
 
-        clearDraft: () =>
-          set(
-            (s) => {
+          removeStagedToken: (index) =>
+            set((s) => {
+              s.draft.tokens.splice(index, 1);
+            }),
+
+          moveStagedToken: (from, to) =>
+            set(
+              (s) => {
+                const arr = s.draft.tokens;
+                if (
+                  from === to ||
+                  from < 0 ||
+                  to < 0 ||
+                  from >= arr.length ||
+                  to >= arr.length
+                )
+                  return;
+                const [moved] = arr.splice(from, 1);
+                arr.splice(to, 0, moved);
+              },
+              false,
+              'editor/moveStagedToken',
+            ),
+
+          clearDraft: () =>
+            set(
+              (s) => {
+                s.draft = { ...createInitialDraft(), color: s.lastColor };
+              },
+              false,
+              'editor/clearDraft',
+            ),
+
+          beginEdit: (roundId: string, op: Operation) =>
+            set((s) => {
+              s.selection.roundId = roundId;
+              s.selection.opId = op.id;
+              s.selection.mode = 'edit';
+              s.draft = loadDraftFromOperation(op);
+            }),
+
+          cancelEdit: () => {
+            set((s) => {
+              s.selection.mode = 'create';
+              s.selection.opId = undefined;
               s.draft = { ...createInitialDraft(), color: s.lastColor };
-            },
-            false,
-            'editor/clearDraft',
-          ),
+            });
 
-        beginEdit: (roundId: string, op: Operation) =>
-          set((s) => {
-            s.selection.roundId = roundId;
-            s.selection.opId = op.id;
-            s.selection.mode = 'edit';
-            s.draft = loadDraftFromOperation(op);
-          }),
+            const ps = usePatternStore.getState();
+            const lastId = ps.rounds.at(-1)?.id;
+            if (lastId) ps.selectRound(lastId);
+          },
 
-        cancelEdit: () => {
-          set((s) => {
-            s.selection.mode = 'create';
-            s.selection.opId = undefined;
-            s.draft = { ...createInitialDraft(), color: s.lastColor };
-          });
+          commitAsOperation: () => {
+            const { draft, selection } = get();
+            const ps = usePatternStore.getState();
 
-          const ps = usePatternStore.getState();
-          const lastId = ps.rounds.at(-1)?.id;
-          if (lastId) ps.selectRound(lastId);
-        },
+            const roundId = ps.selectedRoundId;
+            if (!roundId) return;
 
-        commitAsOperation: () => {
-          const { draft, selection } = get();
-          const ps = usePatternStore.getState();
+            const tokens = buildTokensFromDraft(draft);
+            if (tokens.length === 0) return;
 
-          const roundId = ps.selectedRoundId;
-          if (!roundId) return;
+            set((s) => {
+              if (draft.color) s.lastColor = draft.color;
+            });
 
-          const tokens = buildTokensFromDraft(draft);
-          if (tokens.length === 0) return;
+            // 편집 모드인 경우: updateOperation
+            if (selection.mode === 'edit' && selection.opId) {
+              ps.updateOperation(roundId, selection.opId, {
+                tokens,
+                repeat: draft.repeat,
+                color: draft.color!,
+              });
 
-          set((s) => {
-            if (draft.color) s.lastColor = draft.color;
-          });
+              get().cancelEdit();
+              const lastId = ps.rounds.at(-1)?.id;
+              if (lastId) ps.selectRound(lastId);
+              return;
+            }
 
-          // 편집 모드인 경우: updateOperation
-          if (selection.mode === 'edit' && selection.opId) {
-            ps.updateOperation(roundId, selection.opId, {
+            const op = {
+              id: uid(),
               tokens,
               repeat: draft.repeat,
               color: draft.color!,
-            });
-
-            get().cancelEdit();
-            const lastId = ps.rounds.at(-1)?.id;
-            if (lastId) ps.selectRound(lastId);
-            return;
-          }
-
-          const op = {
-            id: uid(),
-            tokens,
-            repeat: draft.repeat,
-            color: draft.color!,
-          };
-          ps.addOperation(roundId, op);
-          get().clearDraft();
+            };
+            ps.addOperation(roundId, op);
+            get().clearDraft();
+          },
+        })),
+        { name: 'editor' },
+      ),
+      {
+        name: 'editor',
+        storage: createJSONStorage(() => localStorage),
+        partialize: (s) => ({
+          swatches: s.swatches,
+          lastColor: s.lastColor,
+        }),
+        onRehydrateStorage: () => (state) => {
+          const lc = state?.lastColor;
+          if (!lc) return;
+          state!.draft = { ...createInitialDraft(), color: lc };
         },
-      })),
-      { name: 'editor' },
+      },
     ),
   );
 

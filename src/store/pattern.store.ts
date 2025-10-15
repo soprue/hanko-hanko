@@ -181,21 +181,21 @@ const createPatternStore = (): PatternStore => {
             get().setRounds(parsed.rounds ?? []);
           },
         })),
-        {
-          name: 'pattern',
-          storage: createJSONStorage(() => localStorage),
-          onRehydrateStorage: () => () => {
-            const st = store.getState();
-            if (!st.rounds.length) {
-              const id = st.addRound();
-              st.selectRound(id);
-            } else if (!st.selectedRoundId) {
-              st.selectRound(st.rounds[0].id);
-            }
-          },
-        },
+        { name: 'pattern' },
       ),
-      { name: 'pattern' },
+      {
+        name: 'pattern',
+        storage: createJSONStorage(() => localStorage),
+        onRehydrateStorage: () => () => {
+          const st = store.getState();
+          if (!st.rounds.length) {
+            const id = st.addRound();
+            st.selectRound(id);
+          } else if (!st.selectedRoundId) {
+            st.selectRound(st.rounds[0].id);
+          }
+        },
+      },
     ),
   );
   return store;

@@ -15,8 +15,12 @@ type ColorPickerProps = {
   defaultValue?: RGBA; // 언컨트롤드 초기값
   onChange: (value: RGBA) => void;
   showAlpha?: boolean;
+
   swatches?: RGBA[];
-  allowCustomSwatch?: boolean; // 현재 색상을 스와치에 추가 버튼 표시
+  onAddSwatch?: (c: RGBA) => void;
+  onClearSwatches?: () => void;
+
+  allowCustomSwatch?: boolean;
   className?: string;
 };
 
@@ -35,13 +39,13 @@ const DEFAULT_VALUE: RGBA = { r: 67, g: 151, b: 235, a: 1 };
 
 const CheckerBg = ({ className }: { className?: string }) => (
   <div
-    className={('relative overflow-hidden ' + (className ?? '')).trim()}
+    className={cn('relative overflow-hidden', className)}
     style={{
       backgroundImage:
-        'linear-gradient(45deg,#ddd 25%,transparent 25%),' +
-        'linear-gradient(-45deg,#ddd 25%,transparent 25%),' +
-        'linear-gradient(45deg,transparent 75%,#ddd 75%),' +
-        'linear-gradient(-45deg,transparent 75%,#ddd 75%)',
+        'linear-gradient(45deg, #ddd 25%, transparent 25%),' +
+        'linear-gradient(-45deg, #ddd 25%, transparent 25%),' +
+        'linear-gradient(45deg, transparent 75%, #ddd 75%),' +
+        'linear-gradient(-45deg, transparent 75%, #ddd 75%)',
       backgroundSize: '16px 16px',
       backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0',
     }}
@@ -53,6 +57,8 @@ function ColorPicker({
   defaultValue = DEFAULT_VALUE,
   onChange,
   swatches = DEFAULT_SWATCHES,
+  onAddSwatch,
+  onClearSwatches,
   showAlpha = true,
   allowCustomSwatch = true,
   className,
@@ -70,17 +76,21 @@ function ColorPicker({
   const [alphaStr, setAlphaStr] = useState<string>(() =>
     String(Math.round((color.a ?? 1) * 100)),
   );
-  const [swatchList, setSwatchList] = useState<RGBA[]>(swatches);
 
-  // 색상 변경 핸들러 최적화
   const emitColorChange = useCallback(
     (newColor: RGBA) => {
-      if (!isControlled) setInternalColor(newColor);
-      onChange?.(newColor);
-      setHexInput(rgbaToHex(newColor));
-      setAlphaStr(String(Math.round((newColor.a ?? 1) * 100)));
+      const normalized: RGBA = {
+        r: Math.round(newColor.r),
+        g: Math.round(newColor.g),
+        b: Math.round(newColor.b),
+        a: showAlpha ? clamp(newColor.a ?? 1, 0, 1) : 1,
+      };
+      if (!isControlled) setInternalColor(normalized);
+      onChange?.(normalized);
+      setHexInput(rgbaToHex(normalized));
+      setAlphaStr(String(Math.round((normalized.a ?? 1) * 100)));
     },
-    [isControlled, onChange],
+    [isControlled, onChange, showAlpha],
   );
 
   // 외부 value 변경 동기화
@@ -125,6 +135,41 @@ function ColorPicker({
     onAlphaChangePct(n);
   };
 
+  const addSwatch = () => {
+    const c = showAlpha ? color : { ...color, a: 1 };
+    if (onAddSwatch) onAddSwatch(c);
+  };
+  const clearSwatches = () => {
+    if (onClearSwatches) onClearSwatches();
+  };
+
+  const handleSwatchClick = (rgba: RGBA) =>
+    emitColorChange({ ...(showAlpha ? rgba : { ...rgba, a: 1 }) });
+
+  const copyHex = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        rgbaToHex(
+          { r: color.r, g: color.g, b: color.b, a: color.a },
+          showAlpha ? true : false,
+        ),
+      );
+    } catch {
+      /* noop */
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleColorfulChange = (next: any) => {
+    const nextColor: RGBA = {
+      r: Math.round(next.r),
+      g: Math.round(next.g),
+      b: Math.round(next.b),
+      a: showAlpha ? (typeof next.a === 'number' ? next.a : (color.a ?? 1)) : 1,
+    };
+    emitColorChange(nextColor);
+  };
+
   const handleEyedropper = async () => {
     if (window.EyeDropper) {
       const eye = new window.EyeDropper();
@@ -140,43 +185,6 @@ function ColorPicker({
     } else if ((navigator as any).permissions) {
       console.info('EyeDropper not supported.');
     }
-  };
-
-  const addSwatch = () =>
-    setSwatchList((prev) => [color, ...prev].slice(0, 24));
-
-  const clearSwatches = () => setSwatchList(DEFAULT_SWATCHES);
-
-  const handleSwatchClick = (rgba: RGBA) => emitColorChange({ ...rgba });
-
-  const copyHex = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        rgbaToHex(
-          {
-            r: color.r,
-            g: color.g,
-            b: color.b,
-            a: color.a,
-          },
-          showAlpha ? true : false,
-        ),
-      );
-    } catch {
-      /* empty */
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleColorfulChange = (next: any) => {
-    // RgbColorPicker는 {r,g,b}, RgbaColorPicker는 {r,g,b,a}를 전달
-    const nextColor: RGBA = {
-      r: Math.round(next.r),
-      g: Math.round(next.g),
-      b: Math.round(next.b),
-      a: showAlpha ? (typeof next.a === 'number' ? next.a : (color.a ?? 1)) : 1,
-    };
-    emitColorChange(nextColor);
   };
 
   return (
@@ -197,7 +205,6 @@ function ColorPicker({
         )}
       </div>
 
-      {/* 컨트롤 패널 */}
       <div className='flex items-center gap-1'>
         <Button variant='ghost' onClick={handleEyedropper} className='!p-2'>
           <Icon name='Droplet' width={20} color='#444' />
@@ -248,7 +255,6 @@ function ColorPicker({
         </Button>
       </div>
 
-      {/* 스와치 */}
       <div className='border-border flex items-center justify-between border-t pt-3'>
         <div className='text-xs text-neutral-500'>Saved colors</div>
         {allowCustomSwatch && (
@@ -260,24 +266,23 @@ function ColorPicker({
           </button>
         )}
       </div>
+
       <div className='flex flex-wrap gap-2'>
-        {swatchList.map((c: RGBA, idx) => {
-          return (
-            <button
-              key={idx}
-              onClick={() => handleSwatchClick(c)}
-              className='relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border border-neutral-200'
-              title={rgbaString(c)}
-              aria-label={rgbaString(c)}
-            >
-              <CheckerBg className='absolute inset-0' />
-              <div
-                className='absolute inset-0'
-                style={{ background: rgbaString(c) }}
-              />
-            </button>
-          );
-        })}
+        {(swatches ?? DEFAULT_SWATCHES).map((c: RGBA, idx) => (
+          <button
+            key={idx}
+            onClick={() => handleSwatchClick(c)}
+            className='relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border border-neutral-200'
+            title={rgbaString(c)}
+            aria-label={rgbaString(c)}
+          >
+            <CheckerBg className='absolute inset-0' />
+            <div
+              className='absolute inset-0'
+              style={{ background: rgbaString(c) }}
+            />
+          </button>
+        ))}
       </div>
     </div>
   );
