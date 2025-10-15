@@ -33,6 +33,7 @@ export type Draft = {
 export type EditorState = {
   selection: Selection;
   draft: Draft;
+  lastColor: RGBA;
 
   selectOp: (id?: string) => void;
 
@@ -106,12 +107,15 @@ declare global {
   var __APP_EDITOR_STORE__: EditorStore | undefined;
 }
 
+const initial = createInitialDraft();
+
 const createEditorStore = (): EditorStore =>
   create<EditorState>()(
     devtools(
       immer((set, get) => ({
         selection: { mode: 'create' },
-        draft: createInitialDraft(),
+        draft: initial,
+        lastColor: initial.color!,
 
         selectOp: (id) =>
           set((s) => {
@@ -182,7 +186,9 @@ const createEditorStore = (): EditorStore =>
               const g = clamp(Math.round(rgba.g), 0, 255);
               const b = clamp(Math.round(rgba.b), 0, 255);
               const a = Math.max(0, Math.min(1, rgba.a ?? 1));
-              s.draft.color = { r, g, b, a };
+              const next = { r, g, b, a };
+              s.draft.color = next;
+              s.lastColor = next;
             },
             false,
             'editor/setColor',
@@ -222,7 +228,7 @@ const createEditorStore = (): EditorStore =>
         clearDraft: () =>
           set(
             (s) => {
-              s.draft = createInitialDraft();
+              s.draft = { ...createInitialDraft(), color: s.lastColor };
             },
             false,
             'editor/clearDraft',
@@ -240,7 +246,7 @@ const createEditorStore = (): EditorStore =>
           set((s) => {
             s.selection.mode = 'create';
             s.selection.opId = undefined;
-            s.draft = createInitialDraft();
+            s.draft = { ...createInitialDraft(), color: s.lastColor };
           });
 
           const ps = usePatternStore.getState();
@@ -257,6 +263,10 @@ const createEditorStore = (): EditorStore =>
 
           const tokens = buildTokensFromDraft(draft);
           if (tokens.length === 0) return;
+
+          set((s) => {
+            if (draft.color) s.lastColor = draft.color;
+          });
 
           // 편집 모드인 경우: updateOperation
           if (selection.mode === 'edit' && selection.opId) {
