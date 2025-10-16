@@ -22,8 +22,8 @@ export type StitchInstance = {
   roundIndex: number;
 };
 
-const TORUS_R = 1.5;
-const TORUS_TUBE = 0.6;
+const TORUS_R = 1.8;
+const TORUS_TUBE = 0.8;
 const PACKING = 0.5;
 const LAYER_HEIGHT = 1.3;
 const TILT = 0;

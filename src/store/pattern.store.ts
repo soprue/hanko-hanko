@@ -97,10 +97,13 @@ const createPatternStore = (): PatternStore => {
 
           removeRound: (roundId) => {
             set((s) => {
+              const idx = s.rounds.findIndex((r) => r.id === roundId);
               s.rounds = s.rounds.filter((r) => r.id !== roundId);
               s.rounds = recalc(s.rounds);
+
               if (s.selectedRoundId === roundId) {
-                s.selectedRoundId = s.rounds.at(-1)?.id;
+                const nextIdx = Math.max(0, Math.min(idx, s.rounds.length - 1));
+                s.selectedRoundId = s.rounds[nextIdx]?.id;
               }
             });
           },
@@ -181,21 +184,21 @@ const createPatternStore = (): PatternStore => {
             get().setRounds(parsed.rounds ?? []);
           },
         })),
-        {
-          name: 'pattern',
-          storage: createJSONStorage(() => localStorage),
-          onRehydrateStorage: () => () => {
-            const st = store.getState();
-            if (!st.rounds.length) {
-              const id = st.addRound();
-              st.selectRound(id);
-            } else if (!st.selectedRoundId) {
-              st.selectRound(st.rounds[0].id);
-            }
-          },
-        },
+        { name: 'pattern' },
       ),
-      { name: 'pattern' },
+      {
+        name: 'pattern',
+        storage: createJSONStorage(() => localStorage),
+        onRehydrateStorage: () => () => {
+          const st = store.getState();
+          if (!st.rounds.length) {
+            const id = st.addRound();
+            st.selectRound(id);
+          } else if (!st.selectedRoundId) {
+            st.selectRound(st.rounds[0].id);
+          }
+        },
+      },
     ),
   );
   return store;
