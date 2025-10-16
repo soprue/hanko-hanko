@@ -1,5 +1,7 @@
 import { useRef } from 'react';
 
+import * as Sentry from '@sentry/react';
+
 import Button from '@components/ui/Button';
 import Icon from '@components/ui/Icon';
 import { usePatternStore } from '@store/pattern.store';
@@ -21,35 +23,64 @@ function Header() {
 
   // 내보내기
   const handleExport = () => {
-    const json = serialize();
-    let pretty = json;
-    try {
-      pretty = JSON.stringify(JSON.parse(json), null, 2);
-    } catch {
-      /* ignore */
-    }
-    downloadText(tsFilename(), pretty);
+    Sentry.startSpan({ op: 'ui.click', name: 'Export Pattern' }, (span) => {
+      try {
+        span.setAttribute('page', 'editor');
+        span.setAttribute('action', 'export');
+        
+        const json = serialize();
+        let pretty = json;
+        try {
+          pretty = JSON.stringify(JSON.parse(json), null, 2);
+        } catch {
+          /* ignore */
+        }
+        downloadText(tsFilename(), pretty);
+      } finally {
+        span.end();
+      }
+    });
   };
 
   // 불러오기
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    await Sentry.startSpan({ op: 'ui.click', name: 'Import Pattern' }, async (span) => {
+      try {
+        span.setAttribute('page', 'editor');
+        span.setAttribute('action', 'import');
+        
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-    try {
-      const text = await readTextFromFile(file);
-      const parsed = JSON.parse(text);
-      const rounds = parsed?.rounds ?? parsed?.state?.rounds ?? null;
-      if (!Array.isArray(rounds))
-        throw new Error('rounds 배열을 찾을 수 없습니다.');
-      deserialize(JSON.stringify({ rounds }));
-      e.target.value = '';
-      alert('패턴이 성공적으로 불러와졌습니다.');
-    } catch (err) {
-      console.error(err);
-      alert('불러오기 실패: 파일 형식이 올바르지 않습니다.');
-      e.target.value = '';
-    }
+        try {
+          const text = await readTextFromFile(file);
+          span.setAttribute('fileSize', file.size);
+          span.setAttribute('fileName', file.name);
+          
+          const parsed = JSON.parse(text);
+          const rounds = parsed?.rounds ?? parsed?.state?.rounds ?? null;
+          if (!Array.isArray(rounds))
+            throw new Error('rounds 배열을 찾을 수 없습니다.');
+          
+          span.setAttribute('roundsCount', rounds.length);
+          
+          deserialize(JSON.stringify({ rounds }));
+          e.target.value = '';
+          alert('패턴이 성공적으로 불러와졌습니다.');
+        } catch (err) {
+          console.error(err);
+          span.setAttribute('error', true);
+          Sentry.captureException(err, {
+            tags: { module: 'PatternImport' },
+            extra: { fileName: file?.name, fileSize: file?.size },
+          });
+          alert('불러오기 실패: 파일 형식이 올바르지 않습니다.');
+          e.target.value = '';
+        }
+      } finally {
+        span.end();
+      }
+    });
   };
 
   const openFileDialog = () => fileRef.current?.click();
