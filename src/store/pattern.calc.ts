@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react';
+
 import type { Operation, RoundWithMeta, StitchToken } from '@/types/patterns';
 
 /**
@@ -37,14 +39,23 @@ export function uid() {
  * producedByToken({ base:'MR', arity:null })             // 0
  */
 export function producedByToken(token: StitchToken): number {
-  const times = token.times ?? 1;
+  try {
+    const times = token.times ?? 1;
 
-  if (token.base === 'MR' || token.base === 'SLST') return 0 * times;
+    if (token.base === 'MR' || token.base === 'SLST') return 0 * times;
 
-  if (token.arity?.kind === 'inc') return token.arity.n * times;
-  if (token.arity?.kind === 'dec') return 1 * times;
+    if (token.arity?.kind === 'inc') return token.arity.n * times;
+    if (token.arity?.kind === 'dec') return 1 * times;
 
-  return 1 * times;
+    return 1 * times;
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { function: 'producedByToken', token },
+    });
+    // Fallback: 안전한 기본값 반환
+    return 1;
+  }
 }
 
 /**
@@ -62,12 +73,21 @@ export function producedByToken(token: StitchToken): number {
  * }) // 18
  */
 export function producedByOp(op: Operation): number {
-  const perGroup = op.tokens.reduce(
-    (sum, token) => sum + producedByToken(token),
-    0,
-  );
+  try {
+    const perGroup = op.tokens.reduce(
+      (sum, token) => sum + producedByToken(token),
+      0,
+    );
 
-  return perGroup * (op.repeat ?? 1);
+    return perGroup * (op.repeat ?? 1);
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { function: 'producedByOp', opId: op.id, tokensCount: op.tokens?.length },
+    });
+    // Fallback: 안전한 기본값 반환
+    return 0;
+  }
 }
 
 /**
@@ -79,27 +99,36 @@ export function producedByOp(op: Operation): number {
  * @returns 해당 라운드가 생성하는 총 코 수
  */
 export function producedByRound(r: RoundWithMeta): number {
-  let total = 0;
-  let flatIndex = 0;
-  let prevBase: string | undefined;
+  try {
+    let total = 0;
+    let flatIndex = 0;
+    let prevBase: string | undefined;
 
-  for (const op of r.ops) {
-    const rep = op.repeat ?? 1;
+    for (const op of r.ops) {
+      const rep = op.repeat ?? 1;
 
-    for (let k = 0; k < rep; k++) {
-      for (const t of op.tokens) {
-        const isTurningChain =
-          t.base === 'CH' && (flatIndex === 0 || prevBase === 'MR');
+      for (let k = 0; k < rep; k++) {
+        for (const t of op.tokens) {
+          const isTurningChain =
+            t.base === 'CH' && (flatIndex === 0 || prevBase === 'MR');
 
-        total += isTurningChain ? 0 : producedByToken(t);
+          total += isTurningChain ? 0 : producedByToken(t);
 
-        prevBase = t.base;
-        flatIndex++;
+          prevBase = t.base;
+          flatIndex++;
+        }
       }
     }
-  }
 
-  return total;
+    return total;
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { function: 'producedByRound', roundId: r.id, opsCount: r.ops?.length },
+    });
+    // Fallback: 안전한 기본값 반환
+    return 0;
+  }
 }
 
 /**
@@ -125,93 +154,107 @@ export function validateRound(
   round: RoundWithMeta,
   prevRound?: RoundWithMeta,
 ): string[] {
-  const warns: string[] = [];
+  try {
+    const warns: string[] = [];
 
-  // 합계/이전 합계
-  const total = producedByRound(round);
-  const prevTotal = prevRound?.totalStitches;
+    // 합계/이전 합계
+    const total = producedByRound(round);
+    const prevTotal = prevRound?.totalStitches;
 
-  // 이전 단의 MR 존재 여부(비교 규칙에서 사용)
-  const prevHasMR =
-    !!prevRound &&
-    prevRound.ops.some((op) => op.tokens.some((t) => t.base === 'MR'));
+    // 이전 단의 MR 존재 여부(비교 규칙에서 사용)
+    const prevHasMR =
+      !!prevRound &&
+      prevRound.ops.some((op) => op.tokens.some((t) => t.base === 'MR'));
 
-  // 한 번의 순회로 현재 단의 상태를 전부 수집
-  let hasInc = false;
-  let hasDec = false;
-  let mrCount = 0;
-  let slstCount = 0;
+    // 한 번의 순회로 현재 단의 상태를 전부 수집
+    let hasInc = false;
+    let hasDec = false;
+    let mrCount = 0;
+    let slstCount = 0;
 
-  let firstMRIndex = -1; // 평탄화된 토큰 인덱스 기준
-  let lastSLSTIndex = -1; // 마지막 SLST의 평탄화 인덱스
-  let flatLen = 0; // 평탄화된 전체 토큰 수
+    let firstMRIndex = -1; // 평탄화된 토큰 인덱스 기준
+    let lastSLSTIndex = -1; // 마지막 SLST의 평탄화 인덱스
+    let flatLen = 0; // 평탄화된 전체 토큰 수
 
-  for (let i = 0; i < round.ops.length; i++) {
-    const op = round.ops[i];
+    for (let i = 0; i < round.ops.length; i++) {
+      const op = round.ops[i];
 
-    // (4) 반복값 검사
-    if (!Number.isFinite(op.repeat) || (op.repeat as number) <= 0) {
-      warns.push(`[${i + 1}번째 그룹] repeat 값이 1 이상이어야 합니다.`);
-    }
-
-    for (let ti = 0; ti < op.tokens.length; ti++) {
-      const t = op.tokens[ti];
-
-      // 늘림/줄임 플래그
-      if (t.arity?.kind === 'inc') hasInc = true;
-      if (t.arity?.kind === 'dec') hasDec = true;
-
-      // MR/SLST 개수 및 위치 기록
-      if (t.base === 'MR') {
-        mrCount++;
-        if (firstMRIndex === -1) firstMRIndex = flatLen;
-      } else if (t.base === 'SLST') {
-        slstCount++;
-        if (lastSLSTIndex === -1) lastSLSTIndex = flatLen;
+      // (4) 반복값 검사
+      if (!Number.isFinite(op.repeat) || (op.repeat as number) <= 0) {
+        warns.push(`[${i + 1}번째 그룹] repeat 값이 1 이상이어야 합니다.`);
       }
 
-      flatLen++;
+      for (let ti = 0; ti < op.tokens.length; ti++) {
+        const t = op.tokens[ti];
+
+        // 늘림/줄임 플래그
+        if (t.arity?.kind === 'inc') hasInc = true;
+        if (t.arity?.kind === 'dec') hasDec = true;
+
+        // MR/SLST 개수 및 위치 기록
+        if (t.base === 'MR') {
+          mrCount++;
+          if (firstMRIndex === -1) firstMRIndex = flatLen;
+        } else if (t.base === 'SLST') {
+          slstCount++;
+          if (lastSLSTIndex === -1) lastSLSTIndex = flatLen;
+        }
+
+        flatLen++;
+      }
     }
-  }
 
-  // (1) MR 사용 위치/횟수 관련 경고
-  const idx = round.meta?.roundIndex ?? 0;
-  if (mrCount > 0 && idx > 1)
-    warns.push('매직링(MR)은 보통 1단에서만 사용합니다.');
-  if (mrCount > 1)
-    warns.push('한 단에서 매직링(MR)이 2번 이상 사용되었습니다.');
+    // (1) MR 사용 위치/횟수 관련 경고
+    const idx = round.meta?.roundIndex ?? 0;
+    if (mrCount > 0 && idx > 1)
+      warns.push('매직링(MR)은 보통 1단에서만 사용합니다.');
+    if (mrCount > 1)
+      warns.push('한 단에서 매직링(MR)이 2번 이상 사용되었습니다.');
 
-  // (2) 줄임만 단독 사용 경고
-  if (hasDec && !prevRound) warns.push('줄임(DEC)은 이전 단이 필요합니다.');
+    // (2) 줄임만 단독 사용 경고
+    if (hasDec && !prevRound) warns.push('줄임(DEC)은 이전 단이 필요합니다.');
 
-  // (5) 위치 규칙 경고
-  if (flatLen > 0) {
-    if (firstMRIndex !== -1 && firstMRIndex !== 0)
-      warns.push('매직링(MR)은 단의 갖아 앞에 위치해야 합니다.');
-    if (lastSLSTIndex !== -1 && lastSLSTIndex !== flatLen - 1)
-      warns.push('빼뜨기(SLST)는 단의 가장 뒤에서 사용하는 것이 일반적입니다.');
-    if (slstCount > 1)
-      warns.push('한 단에서 빼뜨기(SLST)가 여러 번 사용되었습니다.');
-  }
-
-  // (3) 늘림/줄임 없이 코 수 변화
-  const comparable =
-    prevTotal !== undefined && total !== 0 && !(prevTotal === 0 && prevHasMR);
-
-  if (comparable) {
-    if (total > prevTotal && !hasInc) {
-      warns.push(
-        `이전 단보다 코 수가 증가했지만 늘림(INC)이 사용되지 않았어요. (${prevTotal}→${total})`,
-      );
+    // (5) 위치 규칙 경고
+    if (flatLen > 0) {
+      if (firstMRIndex !== -1 && firstMRIndex !== 0)
+        warns.push('매직링(MR)은 단의 갖아 앞에 위치해야 합니다.');
+      if (lastSLSTIndex !== -1 && lastSLSTIndex !== flatLen - 1)
+        warns.push('빼뜨기(SLST)는 단의 가장 뒤에서 사용하는 것이 일반적입니다.');
+      if (slstCount > 1)
+        warns.push('한 단에서 빼뜨기(SLST)가 여러 번 사용되었습니다.');
     }
-    if (total < prevTotal && !hasDec) {
-      warns.push(
-        `이전 단보다 코 수가 감소했지만 줄임(DEC)이 사용되지 않았어요. (${prevTotal}→${total})`,
-      );
-    }
-  }
 
-  return warns;
+    // (3) 늘림/줄임 없이 코 수 변화
+    const comparable =
+      prevTotal !== undefined && total !== 0 && !(prevTotal === 0 && prevHasMR);
+
+    if (comparable) {
+      if (total > prevTotal && !hasInc) {
+        warns.push(
+          `이전 단보다 코 수가 증가했지만 늘림(INC)이 사용되지 않았어요. (${prevTotal}→${total})`,
+        );
+      }
+      if (total < prevTotal && !hasDec) {
+        warns.push(
+          `이전 단보다 코 수가 감소했지만 줄임(DEC)이 사용되지 않았어요. (${prevTotal}→${total})`,
+        );
+      }
+    }
+
+    return warns;
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { 
+        function: 'validateRound', 
+        roundId: round.id, 
+        prevRoundId: prevRound?.id,
+        opsCount: round.ops?.length,
+      },
+    });
+    // Fallback: 에러 발생 시 경고 메시지 반환
+    return ['검증 중 오류가 발생했습니다.'];
+  }
 }
 
 /**
@@ -234,27 +277,61 @@ export function validateRound(
  * // 이제 next[i].totalStitches, next[i].meta.warnings를 UI에서 바로 사용 가능
  */
 export function recalc(rounds: RoundWithMeta[]): RoundWithMeta[] {
-  let prevRecalc: RoundWithMeta | undefined;
+  try {
+    let prevRecalc: RoundWithMeta | undefined;
 
-  return rounds.map((r, i) => {
-    const curr: RoundWithMeta = {
-      ...r,
-      totalStitches: producedByRound(r),
-      meta: {
-        ...(r.meta ?? {}),
-        roundIndex: i + 1,
-        warnings: [],
-      },
-    };
+    return rounds.map((r, i) => {
+      try {
+        const curr: RoundWithMeta = {
+          ...r,
+          totalStitches: producedByRound(r),
+          meta: {
+            ...(r.meta ?? {}),
+            roundIndex: i + 1,
+            warnings: [],
+          },
+        };
 
-    curr.meta!.warnings = validateRound(curr, prevRecalc);
+        curr.meta!.warnings = validateRound(curr, prevRecalc);
 
-    prevRecalc = curr;
-    return curr;
-  });
+        prevRecalc = curr;
+        return curr;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { module: 'PatternValidation' },
+          extra: { function: 'recalc.map', roundId: r.id, roundIndex: i },
+        });
+        // Fallback: 에러 발생 시 원본 라운드 반환 (최소한의 메타 정보 추가)
+        return {
+          ...r,
+          meta: {
+            ...(r.meta ?? {}),
+            roundIndex: i + 1,
+            warnings: ['계산 중 오류가 발생했습니다.'],
+          },
+        };
+      }
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { function: 'recalc', roundsCount: rounds?.length },
+    });
+    // Fallback: 전체 실패 시 원본 배열 반환
+    return rounds;
+  }
 }
 
 export function totalOfRound(r: RoundWithMeta): number {
-  if (typeof r.totalStitches === 'number') return r.totalStitches;
-  return r.ops.reduce((sum, op) => sum + producedByOp(op), 0);
+  try {
+    if (typeof r.totalStitches === 'number') return r.totalStitches;
+    return r.ops.reduce((sum, op) => sum + producedByOp(op), 0);
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { module: 'PatternValidation' },
+      extra: { function: 'totalOfRound', roundId: r.id, opsCount: r.ops?.length },
+    });
+    // Fallback: 안전한 기본값 반환
+    return 0;
+  }
 }

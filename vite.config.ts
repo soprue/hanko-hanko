@@ -1,5 +1,6 @@
 import path from 'path';
 
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -9,7 +10,17 @@ import generateIconTypesPlugin from './scripts/vite-plugin-generate-icon-types';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), svgr(), tailwindcss(), generateIconTypesPlugin()],
+  plugins: [
+    react(),
+    svgr(),
+    tailwindcss(),
+    generateIconTypesPlugin(),
+    sentryVitePlugin({
+      org: 'gahee-kim',
+      project: 'hanko-hanko',
+    }),
+  ],
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
@@ -22,5 +33,9 @@ export default defineConfig({
       '@styles': path.resolve(__dirname, 'src/styles'),
       '@utils': path.resolve(__dirname, 'src/utils'),
     },
+  },
+
+  build: {
+    sourcemap: true,
   },
 });
