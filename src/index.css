@@ -1,1 +1,47 @@
 @import 'tailwindcss';
+@config '../tailwind.config.js';
+
+@layer base {
+  :root {
+    --primary: #fa6819;
+    --secondary: #eebb84;
+
+    --background: #f8f6f1;
+    --foreground: #1a1918;
+
+    --border: #e8e8e8;
+    --warning: #ec4b4e;
+
+    --text: #333333;
+    --text-foreground: #372d1f;
+    --text-muted: #80786b;
+
+    --font-pretendard: 'Pretendard', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-pretendard);
+  }
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/assets/fonts/PretendardVariable.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox  */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+#root > * ::-webkit-scrollbar {
+  display: none;
+}

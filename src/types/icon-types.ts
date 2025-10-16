@@ -1,0 +1,15 @@
+export type IconType =
+  | 'ArrowDropDown'
+  | 'Checkbox'
+  | 'Copy'
+  | 'Cube'
+  | 'Droplet'
+  | 'Edit'
+  | 'Export'
+  | 'Help'
+  | 'Import'
+  | 'List'
+  | 'Pallet'
+  | 'Plus'
+  | 'Save'
+  | 'Trash';
